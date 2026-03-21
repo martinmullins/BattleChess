@@ -1001,7 +1001,7 @@ undefined2 FUN_1000_0d8d(undefined2 param_1)
   FUN_1000_ecaa();
   FUN_1000_1296(param_1,0xc,0);
   FUN_1000_07f3();
-  return;
+  return 0;  /* return value in AX from FUN_1000_07f3 (Ghidra artifact) */
 }
 
 
@@ -2702,7 +2702,7 @@ void FUN_1000_2301()
     *(undefined2 *)0xb07a = *(undefined2 *)0x9884;
     *(undefined2 *)0xb07c = uVar3;
   }
-  local_a = &_stack_var_minus8;
+  local_a = (undefined1 *)&_stack_var_minus8;
   iVar5 = FUN_1000_ea32(&local_a);
   if (iVar5 != 0) {
     puVar6 = (undefined2 *)*(undefined2 *)0x70;
@@ -3751,7 +3751,7 @@ void FUN_1000_323a(int param_1)
   }
   local_22 = (int *)(*(int *)(param_1 * 0x14 + 0xdb8) * 8 + -0x43e2);
   iVar12 = (*(int *)0x98 * 8 - (int)local_22) + -0x43e2;
-  local_1c = (undefined2 *)(*(int *)(param_1 * 0x14 + 0xdb6) * 8 + -0x43e2);
+  local_1c = (int *)(*(int *)(param_1 * 0x14 + 0xdb6) * 8 + -0x43e2);
   local_6 = iVar12 >> 1;
   local_4 = iVar12 >> 0xf;
   while( true ) {
@@ -15074,10 +15074,10 @@ long FUN_1000_f36e()
 {
   uint in_CX;
   uint uVar1;
-  
+
   for (uVar1 = in_CX & 0xff; uVar1 != 0; uVar1 = uVar1 - 1) {
   }
-  return;
+  return 0;  /* return value in DX:AX from loop (Ghidra artifact) */
 }
 
 
@@ -15813,8 +15813,6 @@ LAB_1000_fbc2:
 
 
 /* ---- FUN_1000_fbf6 @ 1000:fbf6 ---- */
-#pragma on(optimize)
-#pragma off(optimize)
 void FUN_1000_fbf6()
 
 {
@@ -15873,7 +15871,6 @@ void FUN_1000_fbf6()
 
 
 
-#pragma on(optimize)
 /* ---- FUN_1000_fce8 @ 1000:fce8 ---- */
 
 void FUN_1000_fce8(int param_1)
