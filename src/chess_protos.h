@@ -394,7 +394,7 @@ void * FUN_1000_184d();
 /* Unresolved cross-segment / thunk stubs (Ghidra func_0x* references) */
 void FUN_1000_6cb4();
 int func_0x00011012();
-int func_0x00010eb2();
+int func_0x00010eb2();  /* -> FUN_2000_0eb2 */
 int func_0x00011f3e();
 int func_0x00011f20();
 int func_0x00011066();
@@ -405,7 +405,7 @@ int func_0x0000fd6a();
 int func_0x00011fa9();
 int func_0x000110d0();
 int func_0x0000fe59();
-int func_0x00010b15();
+int func_0x00010b15(uint, uint, uint, uint, undefined2);  /* -> FUN_2000_0b15 */
 int func_0x00010e30();
 int func_0x00011084();
 int func_0x000095df();

@@ -10,6 +10,7 @@
 #   make verify   - compare built EXE against original binary
 
 WATCOM     ?= /opt/watcom
+export WATCOM
 BINDIR     := $(WATCOM)/binl
 
 WCC        := $(BINDIR)/wcc
@@ -30,13 +31,15 @@ WLINK      := $(BINDIR)/wlink
 CFLAGS := -ms -0 -d0 -oa -ob -oi -os -s -zl -i$(WATCOM)/h -isrc
 
 # Linker script for DOS MZ output
-# system dos   = produce MS-DOS MZ executable
+# format dos   = produce MS-DOS MZ executable
+# (use 'format dos' directly rather than 'system dos' to avoid W1107 on this
+#  Linux Watcom build where wlink.lnk has a caret in the dos system entry)
 # Runtime objects for 32-bit arithmetic helpers and stack check (__U4M, __I4M, __U4D, __I4D, __STK)
 # Extracted from clibs.lib to avoid pulling in the C startup expecting main()
 RTDIR   := tools/runtime
 RTOBJS  := $(RTDIR)/i4m.o $(RTDIR)/i4d.o
 
-LDFLAGS := system dos
+LDFLAGS := format dos
 
 SRCDIR  := src
 OBJDIR  := build

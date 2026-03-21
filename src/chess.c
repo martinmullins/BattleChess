@@ -16927,7 +16927,9 @@ void FUN_243e_ba6a()
 
 /* FUN_1000_6cb4 - implemented in src/fun_6cb4.asm (not decompiled by Ghidra) */
 int func_0x00011012() { return 0; }
-int func_0x00010eb2() { return 0; }
+/* func_0x00010eb2: overlay dispatch to FUN_2000_0eb2 (1000:0eb2 -> 2000:0eb2)
+ * Called with 1 arg (segment ID); FUN_2000_0eb2 takes no args. */
+int func_0x00010eb2() { FUN_2000_0eb2(); return 0; }
 int func_0x00011f3e() { return 0; }
 int func_0x00011f20() { return 0; }
 int func_0x00011066() { return 0; }
@@ -16941,7 +16943,11 @@ int func_0x0000fd6a() { return (int)FUN_1000_fd6a(0); }
 int func_0x00011fa9() { return 0; }   /* overlay stub - no decompiled body */
 int func_0x000110d0() { return 0; }   /* overlay stub */
 int func_0x0000fe59() { FUN_1000_fe59(); return 0; }
-int func_0x00010b15() { return 0; }   /* overlay stub */
+/* func_0x00010b15: overlay dispatch to FUN_2000_0b15 (1000:0b15 -> 2000:0b15)
+ * Called as (seg_id, p1, p2, p3, p4); skip seg_id, forward p1..p4. */
+int func_0x00010b15(uint _seg, uint p1, uint p2, uint p3, undefined2 p4) {
+    FUN_2000_0b15(p1, p2, p3, p4); return 0;
+}
 int func_0x00010e30() { return 0; }   /* overlay stub */
 int func_0x00011084() { return 0; }   /* overlay stub */
 int func_0x000095df() { FUN_1000_95df(0,0,0); return 0; }
