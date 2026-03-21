@@ -45,7 +45,10 @@ CFLAGS := -ms -0 -d0 -oa -ob -oi -os -s -zl -i$(WATCOM)/h -isrc -wcd102 -wcd104 
 RTDIR   := tools/runtime
 RTOBJS  := $(RTDIR)/i4m.o $(RTDIR)/i4d.o
 
-LDFLAGS := format dos
+# entry_ = entry point (void entry() in chess.c, Ghidra decompilation of 243e:0001)
+# mindata = min extra data paragraphs for overlay buffers (original uses 22083)
+# Note: wlink 'format dos' does not support option mindata; patch MZ header post-link if needed
+LDFLAGS := format dos option start=entry_
 
 SRCDIR  := src
 OBJDIR  := build
@@ -66,10 +69,20 @@ ALL_OBJS := $(OBJS) $(AOBJS)
 
 all: $(TARGET)
 
+# MZ header min_alloc field (bytes 0x0A-0x0B)
+# wlink 'format dos' does not expose this field; patch post-link with python
+# Original CHESS.EXE uses 22083 paragraphs (~353KB) for overlay buffer allocation
+MZ_MINALLOC := 22083
+
 # Link step
 $(TARGET): $(ALL_OBJS) $(RTOBJS)
 	@echo "[LINK] $@"
 	$(WLINK) $(LDFLAGS) name $@ file { $(ALL_OBJS) $(RTOBJS) }
+	@python3 -c "import struct,sys; \
+	    f=open('$@','r+b'); \
+	    f.seek(10); old=struct.unpack('<H',f.read(2))[0]; \
+	    f.seek(10); f.write(struct.pack('<H',$(MZ_MINALLOC))); f.close(); \
+	    print('[PATCH] MZ min_alloc: {} -> $(MZ_MINALLOC)'.format(old))"
 
 # C compilation (16-bit wcc)
 $(OBJDIR)/%.obj: $(SRCDIR)/%.c | $(OBJDIR)
