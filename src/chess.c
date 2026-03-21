@@ -16925,7 +16925,7 @@ void FUN_243e_ba6a()
 
 /* ---- Unresolved stubs for Ghidra func_0x* and FUN_ cross-references ---- */
 
-void FUN_1000_6cb4() {}
+/* FUN_1000_6cb4 - implemented in src/fun_6cb4.asm (not decompiled by Ghidra) */
 int func_0x00011012() { return 0; }
 int func_0x00010eb2() { return 0; }
 int func_0x00011f3e() { return 0; }
