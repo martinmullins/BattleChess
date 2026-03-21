@@ -28,7 +28,9 @@ WLINK      := $(BINDIR)/wlink
 # -s   = no stack overflow checking (avoids __STK runtime dependency)
 # -zl  = suppress default library references (we control the link step)
 # -i   = include path
-CFLAGS := -ms -0 -d0 -oa -ob -oi -os -s -zl -i$(WATCOM)/h -isrc
+# -wcd102 = suppress W102 type mismatch (Ghidra decompiler uses int/ptr coercions
+#           throughout; all types are 16-bit in DOS small model so these are benign)
+CFLAGS := -ms -0 -d0 -oa -ob -oi -os -s -zl -i$(WATCOM)/h -isrc -wcd102
 
 # Linker script for DOS MZ output
 # format dos   = produce MS-DOS MZ executable

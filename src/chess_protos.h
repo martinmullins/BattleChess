@@ -75,14 +75,14 @@ void FUN_1000_3652();
 void FUN_1000_3713(void);
 void FUN_1000_3a99();
 undefined2 FUN_1000_3ac2(void);
-void FUN_1000_3ae3();
+void FUN_1000_3ae3(unsigned);
 undefined2 FUN_1000_3b0c(void);
 void FUN_1000_3b2e(void);
-void FUN_1000_3b3a(byte *, int, ...);
+void FUN_1000_3b3a(unsigned, int, ...);  /* param_1 is a byte* address */
 void FUN_1000_3e4f(void);
 void FUN_1000_3e81();
 void FUN_1000_3eb1();
-void FUN_1000_3f0f(undefined2, undefined2, undefined2, undefined2, undefined2, ...);
+void FUN_1000_3f0f(unsigned, unsigned, unsigned, unsigned, unsigned, ...);
 void FUN_1000_3f49();
 void FUN_1000_3f7f(void);
 void FUN_1000_3f9e();
