@@ -27,7 +27,7 @@ WLINK      := $(BINDIR)/wlink
 # -s   = no stack overflow checking (avoids __STK runtime dependency)
 # -zl  = suppress default library references (we control the link step)
 # -i   = include path
-CFLAGS := -ms -0 -d0 -oa -ob -os -s -zl -i$(WATCOM)/h -isrc
+CFLAGS := -ms -0 -d0 -oa -ob -oi -os -s -zl -i$(WATCOM)/h -isrc
 
 # Linker script for DOS MZ output
 # system dos   = produce MS-DOS MZ executable

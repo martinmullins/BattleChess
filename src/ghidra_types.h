@@ -67,9 +67,12 @@ typedef uint (*code)();
 #define SBORROW2(a,b) ((short)(b) > (short)(a))
 #define SUB21(a,b)    ((int)(signed char)(a) - (int)(unsigned short)(b))
 
-/* DOS hardware I/O port stubs (replaced by int86 in real code) */
-#define in(port)          ((unsigned short)((void)(port),0))
-#define out(port,val)     ((void)(port),(void)(val))
+/* DOS hardware I/O: use Open Watcom intrinsics that generate IN/OUT instructions */
+#include <conio.h>
+#define in(port)          ((unsigned short)inp((unsigned)(port)))
+#define out(port,val)     outp((unsigned)(port),(unsigned)(val))
+/* swi(num): software interrupt - Ghidra artifact for INT n; return value is
+ * a decompiler artifact; use 0 since we can't reconstruct register state. */
 #define swi(num)          ((int)((void)(num),0))
 #define halt_baddata()    ((void)0)
 

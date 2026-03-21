@@ -16931,15 +16931,18 @@ int func_0x00010eb2() { return 0; }
 int func_0x00011f3e() { return 0; }
 int func_0x00011f20() { return 0; }
 int func_0x00011066() { return 0; }
-int func_0x0000fbf6() { return 0; }
-int func_0x0000fce8() { return 0; }
-int func_0x0000fd4e() { return 0; }
-int func_0x0000fd6a() { return 0; }
-int func_0x00011fa9() { return 0; }
-int func_0x000110d0() { return 0; }
-int func_0x0000fe59() { return 0; }
-int func_0x00010b15() { return 0; }
-int func_0x00010e30() { return 0; }
-int func_0x00011084() { return 0; }
-int func_0x000095df() { return 0; }
+/* func_0x* stubs: forward to actual named implementations where known.
+ * The first argument (often 0x1000) is a segment ID for the overlay manager;
+ * our single-segment build ignores it. */
+int func_0x0000fbf6() { FUN_1000_fbf6(); return 0; }
+int func_0x0000fce8() { FUN_1000_fce8(0); return 0; }
+int func_0x0000fd4e() { return FUN_1000_fd4e(0); }
+int func_0x0000fd6a() { return (int)FUN_1000_fd6a(0); }
+int func_0x00011fa9() { return 0; }   /* overlay stub - no decompiled body */
+int func_0x000110d0() { return 0; }   /* overlay stub */
+int func_0x0000fe59() { FUN_1000_fe59(); return 0; }
+int func_0x00010b15() { return 0; }   /* overlay stub */
+int func_0x00010e30() { return 0; }   /* overlay stub */
+int func_0x00011084() { return 0; }   /* overlay stub */
+int func_0x000095df() { FUN_1000_95df(0,0,0); return 0; }
 
