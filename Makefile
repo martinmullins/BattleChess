@@ -30,7 +30,11 @@ WLINK      := $(BINDIR)/wlink
 # -i   = include path
 # -wcd102 = suppress W102 type mismatch (Ghidra decompiler uses int/ptr coercions
 #           throughout; all types are 16-bit in DOS small model so these are benign)
-CFLAGS := -ms -0 -d0 -oa -ob -oi -os -s -zl -i$(WATCOM)/h -isrc -wcd102
+# -wcd104 = suppress W104 inconsistent indirection (Ghidra emits local_4=&local_4
+#           self-referential stack pointer patterns for linked list nodes)
+# -wcd124 = suppress W124 comparison always 0/1 (Ghidra uses byte/undefined1 for
+#           what should be signed char; byte==-95 is always false but intended)
+CFLAGS := -ms -0 -d0 -oa -ob -oi -os -s -zl -i$(WATCOM)/h -isrc -wcd102 -wcd104 -wcd124
 
 # Linker script for DOS MZ output
 # format dos   = produce MS-DOS MZ executable
