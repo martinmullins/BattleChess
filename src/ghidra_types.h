@@ -45,8 +45,9 @@ typedef unsigned long   ulong;
  * which is correct for small-model code that stays within one segment.
  */
 #define CONCAT11(hi, lo) ((unsigned short)((unsigned char)(hi) << 8 | (unsigned char)(lo)))
-/* CONCAT22: pack segment:offset into unsigned long (hi=segment, lo=offset) */
-#define CONCAT22(hi, lo) ((unsigned long)((unsigned short)(hi) << 16) | (unsigned short)(unsigned int)(lo))
+/* CONCAT22: pack segment:offset into unsigned long (hi=segment, lo=offset)
+ * Cast hi to unsigned long BEFORE shifting to avoid W135 (shift on 16-bit type) */
+#define CONCAT22(hi, lo) (((unsigned long)(unsigned short)(hi) << 16) | (unsigned short)(unsigned int)(lo))
 /* Ghidra sub-field access macros */
 #define GH_HI16(v)       ((unsigned short)((unsigned long)(v) >> 16))
 #define GH_LO16(v)       ((unsigned short)(unsigned long)(v))

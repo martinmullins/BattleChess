@@ -16948,6 +16948,7 @@ int func_0x0000fe59() { FUN_1000_fe59(); return 0; }
 int func_0x00010b15(uint _seg, uint p1, uint p2, uint p3, undefined2 p4) {
     FUN_2000_0b15(p1, p2, p3, p4); return 0;
 }
+int func_0x00010de6(undefined2 a, undefined1 b) { return 0; }  /* overlay stub @ 1000:0de6 */
 int func_0x00010e30() { return 0; }   /* overlay stub */
 int func_0x00011084() { return 0; }   /* overlay stub */
 int func_0x000095df() { FUN_1000_95df(0,0,0); return 0; }

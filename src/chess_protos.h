@@ -406,6 +406,7 @@ int func_0x00011fa9();
 int func_0x000110d0();
 int func_0x0000fe59();
 int func_0x00010b15(uint, uint, uint, uint, undefined2);  /* -> FUN_2000_0b15 */
+int func_0x00010de6(undefined2, undefined1);  /* overlay stub @ 1000:0de6 */
 int func_0x00010e30();
 int func_0x00011084();
 int func_0x000095df();
