@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Battle Chess</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #1a1a2e;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Courier New', monospace;
+      color: #e0c080;
+      user-select: none;
+    }
+    h1 {
+      font-size: 2rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      color: #ffd700;
+      text-shadow: 0 0 20px #ffd70088;
+    }
+    #game-container {
+      display: flex;
+      gap: 2rem;
+      align-items: flex-start;
+    }
+    #board-canvas {
+      border: 3px solid #8b6914;
+      box-shadow: 0 0 40px #8b691466, inset 0 0 20px #00000088;
+      cursor: pointer;
+      image-rendering: pixelated;
+    }
+    #sidebar {
+      width: 200px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    #status-panel {
+      background: #0d0d1a;
+      border: 1px solid #8b6914;
+      padding: 0.75rem;
+      font-size: 0.85rem;
+    }
+    #status-panel h3 { color: #ffd700; margin-bottom: 0.5rem; font-size: 0.8rem; letter-spacing: 0.1em; }
+    #turn-indicator { font-size: 1rem; }
+    #move-list {
+      background: #0d0d1a;
+      border: 1px solid #8b6914;
+      padding: 0.75rem;
+      font-size: 0.75rem;
+      height: 300px;
+      overflow-y: auto;
+    }
+    #move-list h3 { color: #ffd700; margin-bottom: 0.5rem; font-size: 0.8rem; letter-spacing: 0.1em; }
+    #move-list .move-entry { color: #b0a070; padding: 1px 0; }
+    .btn {
+      background: #2a1a00;
+      border: 1px solid #8b6914;
+      color: #e0c080;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      width: 100%;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: #3a2800; }
+    #promotion-dialog {
+      display: none;
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: #1a1a2e;
+      border: 2px solid #8b6914;
+      padding: 1.5rem;
+      z-index: 100;
+      text-align: center;
+    }
+    #promotion-dialog h3 { color: #ffd700; margin-bottom: 1rem; }
+    #promotion-dialog .promo-choices { display: flex; gap: 0.5rem; justify-content: center; }
+    #promotion-dialog .promo-btn {
+      background: #2a1a00; border: 1px solid #8b6914;
+      color: #e0c080; padding: 0.5rem 0.75rem;
+      cursor: pointer; font-size: 1.5rem;
+    }
+    #promotion-dialog .promo-btn:hover { background: #3a2800; }
+  </style>
+</head>
+<body>
+  <h1>Battle Chess</h1>
+  <div id="game-container">
+    <canvas id="board-canvas" width="512" height="512"></canvas>
+    <div id="sidebar">
+      <div id="status-panel">
+        <h3>Status</h3>
+        <div id="turn-indicator">White to move</div>
+        <div id="check-indicator" style="color:#ff6666;margin-top:4px;"></div>
+      </div>
+      <div id="move-list">
+        <h3>Move History</h3>
+        <div id="move-list-entries"></div>
+      </div>
+      <button class="btn" id="btn-new-game">New Game</button>
+      <button class="btn" id="btn-flip">Flip Board</button>
+      <div id="status-panel">
+        <h3>Play As</h3>
+        <div style="display:flex;gap:0.5rem;margin-top:0.25rem;">
+          <button class="btn" id="btn-play-white" style="flex:1">White</button>
+          <button class="btn" id="btn-play-black" style="flex:1">Black</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="promotion-dialog">
+    <h3>Promote Pawn</h3>
+    <div class="promo-choices">
+      <button class="promo-btn" data-piece="Q">♛</button>
+      <button class="promo-btn" data-piece="R">♜</button>
+      <button class="promo-btn" data-piece="B">♝</button>
+      <button class="promo-btn" data-piece="N">♞</button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
