@@ -32,7 +32,7 @@ export class Game {
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
-    this.renderer = new Renderer(canvas);
+    this.renderer = new Renderer(canvas, () => this.render());
     this.board = startPosition();
     this.boardHistory = [this.board];
 

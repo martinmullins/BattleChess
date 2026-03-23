@@ -4,8 +4,9 @@ import {
 } from '../chess/types.js';
 import { BoardState } from '../chess/board.js';
 import { Move } from '../chess/types.js';
+import { PIECE_SPRITES, loadAllSprites } from '../sprites/pieceSprites.js';
 
-// Unicode chess pieces: [WHITE, BLACK] per piece type index
+// Unicode chess pieces fallback: [WHITE, BLACK] per piece type index
 const PIECE_GLYPH: Record<number, [string, string]> = {
   [PAWN]:   ['♙', '♟'],
   [KNIGHT]: ['♘', '♞'],
@@ -28,11 +29,19 @@ export class Renderer {
   private size: number;
   private squareSize: number;
   private flipped: boolean = false;
+  private sprites: Map<string, HTMLImageElement> = new Map();
+  private spritesReady: boolean = false;
 
-  constructor(canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement, onSpritesReady?: () => void) {
     this.ctx = canvas.getContext('2d')!;
     this.size = canvas.width;
     this.squareSize = this.size / 8;
+    // Load sprites asynchronously; renderer falls back to glyphs until ready
+    loadAllSprites().then(map => {
+      this.sprites = map;
+      this.spritesReady = true;
+      onSpritesReady?.();
+    });
   }
 
   setFlipped(f: boolean): void { this.flipped = f; }
@@ -111,25 +120,7 @@ export class Renderer {
         if (piece !== EMPTY) {
           const pt = pieceType(piece);
           const col = pieceColor(piece);
-          const glyph = PIECE_GLYPH[pt]?.[col] ?? '?';
-
-          // Shadow
-          ctx.font = `bold ${ss * 0.72}px serif`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = 'rgba(0,0,0,0.5)';
-          ctx.fillText(glyph, x + ss / 2 + 2, y + ss / 2 + 2);
-
-          // Piece
-          ctx.fillStyle = col === WHITE ? '#f8f0d8' : '#1a0a00';
-          ctx.fillText(glyph, x + ss / 2, y + ss / 2);
-
-          // Outline for white pieces so they're visible on light squares
-          if (col === WHITE) {
-            ctx.strokeStyle = '#5a3010';
-            ctx.lineWidth = 0.5;
-            ctx.strokeText(glyph, x + ss / 2, y + ss / 2);
-          }
+          this.drawPiece(ctx, piece, pt, col, x, y, ss);
         }
       }
     }
@@ -151,6 +142,58 @@ export class Renderer {
       const { x } = this.squareToPixel(sq(this.flipped ? 7 - f : f, 0));
       ctx.fillStyle = f % 2 === 0 ? COLOR_DARK : COLOR_LIGHT;
       ctx.fillText(file, x + ss - 2, this.size - 2);
+    }
+  }
+
+  /** Draw a single piece using a sprite if loaded, otherwise fall back to a glyph. */
+  private drawPiece(
+    ctx: CanvasRenderingContext2D,
+    _piece: number,
+    pt: number,
+    col: number,
+    x: number,
+    y: number,
+    ss: number,
+  ): void {
+    const info = PIECE_SPRITES[col]?.[pt];
+    const img = info ? this.sprites.get(info.filename) : undefined;
+
+    if (this.spritesReady && img && img.complete && img.naturalWidth > 0) {
+      // Scale sprite to fit within the square, maintaining aspect ratio,
+      // and centre it.
+      const scale = Math.min((ss * 0.85) / info.w, (ss * 0.92) / info.h);
+      const dw = info.w * scale;
+      const dh = info.h * scale;
+      const dx = x + (ss - dw) / 2;
+      const dy = y + ss - dh - ss * 0.03; // bottom-align with small padding
+
+      // Drop shadow
+      ctx.save();
+      ctx.globalAlpha = 0.35;
+      ctx.filter = 'blur(2px)';
+      ctx.drawImage(img, dx + 2, dy + 3, dw, dh);
+      ctx.restore();
+
+      // Sprite
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, dx, dy, dw, dh);
+      ctx.restore();
+    } else {
+      // Glyph fallback
+      const glyph = PIECE_GLYPH[pt]?.[col] ?? '?';
+      ctx.font = `bold ${ss * 0.72}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillText(glyph, x + ss / 2 + 2, y + ss / 2 + 2);
+      ctx.fillStyle = col === WHITE ? '#f8f0d8' : '#1a0a00';
+      ctx.fillText(glyph, x + ss / 2, y + ss / 2);
+      if (col === WHITE) {
+        ctx.strokeStyle = '#5a3010';
+        ctx.lineWidth = 0.5;
+        ctx.strokeText(glyph, x + ss / 2, y + ss / 2);
+      }
     }
   }
 }
