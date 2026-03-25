@@ -28,10 +28,10 @@ export const PIECE_SPRITES: Record<number, Record<number, SpriteInfo>> = {
   [WHITE]: {
     [PAWN]:   { filename: 'sprite_00_19x46.png', w: 19, h: 46 },
     [KNIGHT]: { filename: 'sprite_07_33x42.png', w: 33, h: 42 },
-    [BISHOP]: { filename: 'sprite_08_35x42.png', w: 35, h: 42 },
-    [ROOK]:   { filename: 'sprite_05_31x46.png', w: 31, h: 46 },
+    [BISHOP]: { filename: 'sprite_11_32x46.png', w: 32, h: 46 },
+    [ROOK]:   { filename: 'sprite_04_33x46.png', w: 33, h: 46 },
     [QUEEN]:  { filename: 'sprite_10_38x45.png', w: 38, h: 45 },
-    [KING]:   { filename: 'sprite_04_33x46.png', w: 33, h: 46 },
+    [KING]:   { filename: 'sprite_06_40x45.png', w: 40, h: 45 },
   },
   [BLACK]: {
     [PAWN]:   { filename: 'sprite_13_17x40.png', w: 17, h: 40 },
@@ -39,7 +39,7 @@ export const PIECE_SPRITES: Record<number, Record<number, SpriteInfo>> = {
     [BISHOP]: { filename: 'sprite_26_20x44.png', w: 20, h: 44 },
     [ROOK]:   { filename: 'sprite_24_24x48.png', w: 24, h: 48 },
     [QUEEN]:  { filename: 'sprite_28_26x43.png', w: 26, h: 43 },
-    [KING]:   { filename: 'sprite_12_22x40.png', w: 22, h: 40 },
+    [KING]:   { filename: 'sprite_29_28x43.png', w: 28, h: 43 },
   },
 };
 
