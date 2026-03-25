@@ -55,21 +55,23 @@ def build_chess_palette() -> list[tuple[int,int,int]]:
          58: (78,  50,  25),
          59: (84,  54,  28),
 
-        # --- mid-dark ---
-         69: (100,  68,  38),
-         83: (115,  82,  48),
-         95: (130,  95,  58),
-         97: (135,  98,  60),
-        108: (148, 108,  68),
-        110: (152, 112,  72),
-        123: (165, 125,  82),
-        127: (170, 130,  88),
+        # --- mid-dark (black piece body colours — dark mahogany family) ---
+         69: ( 90,  55,  25),
+         83: ( 75,  46,  22),
+         86: ( 82,  52,  24),
+         95: (100,  62,  28),
+         97: (106,  66,  30),
+        108: ( 90,  56,  26),  # black piece primary colour
+        110: ( 95,  60,  28),
+        111: ( 98,  62,  29),
+        123: (110,  68,  32),
+        127: (116,  72,  34),
 
         # --- mid-tone ---
-        143: (185, 148, 102),
+        143: (185, 148, 102),  # transparent key for black piece sprites
         175: (200, 165, 118),
         185: (208, 175, 128),
-        191: (215, 182, 135),
+        191: (130,  84,  40),  # black piece highlight (dark mahogany, not tan)
 
         # --- mid-light ---
         198: (220, 188, 140),
@@ -102,40 +104,34 @@ def build_chess_palette() -> list[tuple[int,int,int]]:
 
 
 # ---------------------------------------------------------------------------
-# PNG writer (no PIL)
+# PNG writer (no PIL) — writes true RGBA (32-bit) PNGs
 # ---------------------------------------------------------------------------
 
 def write_png(path: str, pixels: bytes, width: int, height: int,
               palette: list[tuple[int,int,int]],
               transparent_index: int = 255) -> None:
+    """Write an RGBA PNG.  Pixels at transparent_index get alpha=0; all others
+    get alpha=255 with the RGB from palette."""
     def chunk(name: bytes, data: bytes) -> bytes:
         c = name + data
         return struct.pack('>I', len(data)) + c + struct.pack('>I', zlib.crc32(c) & 0xffffffff)
 
-    ihdr = struct.pack('>IIBBBBB', width, height, 8, 3, 0, 0, 0)
-
-    plte_data = bytearray()
-    for r, g, b in palette:
-        plte_data += bytes([r, g, b])
-    while len(plte_data) < 768:
-        plte_data += b'\x00\x00\x00'
-
-    # tRNS chunk: mark transparent_index as fully transparent
-    trns_data = bytearray(256)
-    for i in range(256):
-        trns_data[i] = 0 if i == transparent_index else 255
+    # Color type 6 = RGBA (8 bits per channel)
+    ihdr = struct.pack('>IIBBBBB', width, height, 8, 6, 0, 0, 0)
 
     raw = bytearray()
     for y in range(height):
-        raw += b'\x00'
-        raw += pixels[y*width:(y+1)*width]
+        raw += b'\x00'  # filter: None
+        for x in range(width):
+            idx = pixels[y * width + x]
+            r, g, b = palette[idx]
+            a = 0 if idx == transparent_index else 255
+            raw += bytes([r, g, b, a])
     idat_data = zlib.compress(bytes(raw), 6)
 
     with open(path, 'wb') as f:
         f.write(b'\x89PNG\r\n\x1a\n')
         f.write(chunk(b'IHDR', ihdr))
-        f.write(chunk(b'PLTE', bytes(plte_data)))
-        f.write(chunk(b'tRNS', bytes(trns_data)))
         f.write(chunk(b'IDAT', idat_data))
         f.write(chunk(b'IEND', b''))
 
@@ -223,8 +219,15 @@ def extract(outdir: str, verbose: bool) -> None:
                     print(f'  sprite {idx}: only {len(px)}/{w*h} bytes available')
                 continue
 
+            # ALLCANM1: white piece sprites (0-11) use index 255 as transparent;
+            # black piece sprites (12-31) use index 143 (the board background
+            # colour embedded in their bounding boxes) as transparent.
+            if fname == 'ALLCANM1' and 12 <= idx <= 31:
+                trans = 143
+            else:
+                trans = 255
             out_path = os.path.join(sdir, f'sprite_{idx:02d}_{w}x{h}.png')
-            write_png(out_path, bytes(px), w, h, palette, transparent_index=255)
+            write_png(out_path, bytes(px), w, h, palette, transparent_index=trans)
             extracted += 1
             if verbose:
                 from collections import Counter
