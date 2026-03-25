@@ -103,7 +103,7 @@ export function applyMove(b: BoardState, m: Move): BoardState {
   }
 
   // Halfmove clock
-  nb.halfmove = (pt === PAWN || nb.squares[m.to] !== EMPTY) ? 0 : nb.halfmove + 1;
+  nb.halfmove = (pt === PAWN || b.squares[m.to] !== EMPTY) ? 0 : nb.halfmove + 1;
   if (color === BLACK) nb.fullmove++;
   nb.turn = (color === WHITE ? BLACK : WHITE) as Color;
 
