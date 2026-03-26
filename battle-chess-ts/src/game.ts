@@ -40,7 +40,10 @@ export class Game {
     this.checkEl    = document.getElementById('check-indicator')!;
     this.moveListEl = document.getElementById('move-list-entries')!;
 
+    canvas.style.touchAction = 'none';
     canvas.addEventListener('click', this.onCanvasClick.bind(this));
+    canvas.addEventListener('touchstart', this.onTouchStart.bind(this), { passive: false });
+    canvas.addEventListener('touchend',   this.onTouchEnd.bind(this),   { passive: false });
     document.getElementById('btn-new-game')!.addEventListener('click', () => this.newGame());
     document.getElementById('btn-flip')!.addEventListener('click', () => {
       this.renderer.setFlipped(!this.isFlipped);
@@ -79,6 +82,7 @@ export class Game {
   }
 
   private isFlipped: boolean = false;
+  private touchStart: { x: number; y: number } | null = null;
 
   newGame(): void {
     this.board = startPosition();
@@ -99,15 +103,44 @@ export class Game {
     }
   }
 
+  private clientToCanvas(clientX: number, clientY: number): { px: number; py: number } {
+    const rect = this.canvas.getBoundingClientRect();
+    return {
+      px: (clientX - rect.left) * (this.canvas.width  / rect.width),
+      py: (clientY - rect.top)  * (this.canvas.height / rect.height),
+    };
+  }
+
   private onCanvasClick(e: MouseEvent): void {
+    const { px, py } = this.clientToCanvas(e.clientX, e.clientY);
+    this.handleBoardInput(px, py);
+  }
+
+  private onTouchStart(e: TouchEvent): void {
+    e.preventDefault();
+    const t = e.touches[0];
+    if (t) this.touchStart = { x: t.clientX, y: t.clientY };
+  }
+
+  private onTouchEnd(e: TouchEvent): void {
+    e.preventDefault();
+    if (!this.touchStart) return;
+    const t = e.changedTouches[0];
+    if (!t) return;
+    const dx = t.clientX - this.touchStart.x;
+    const dy = t.clientY - this.touchStart.y;
+    this.touchStart = null;
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) return; // swipe — ignore
+    const { px, py } = this.clientToCanvas(t.clientX, t.clientY);
+    this.handleBoardInput(px, py);
+  }
+
+  private handleBoardInput(px: number, py: number): void {
     if (this.status !== 'playing') return;
     if (this.aiThinking) return;
     if (this.board.turn !== this.playerColor) return;
     if (this.pendingPromotion) return;
 
-    const rect = this.canvas.getBoundingClientRect();
-    const px = (e.clientX - rect.left) * (this.canvas.width / rect.width);
-    const py = (e.clientY - rect.top)  * (this.canvas.height / rect.height);
     const s = this.renderer.pixelToSquare(px, py);
     if (s < 0) return;
 
@@ -135,7 +168,7 @@ export class Game {
         }
         this.executeMove(move);
       } else {
-        // Click on another own piece — reselect
+        // Tap on another own piece — reselect
         const piece = this.board.squares[s];
         if (piece !== EMPTY && pieceColor(piece) === this.playerColor) {
           this.selected = s;

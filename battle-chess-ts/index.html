@@ -93,6 +93,36 @@
       cursor: pointer; font-size: 1.5rem;
     }
     #promotion-dialog .promo-btn:hover { background: #3a2800; }
+
+    /* ── Mobile / responsive ────────────────────────────────────── */
+    #board-canvas { touch-action: none; max-width: 100%; }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+      #game-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0 4px;
+      }
+      #board-canvas {
+        /* Scale the 512px canvas to fill the viewport width */
+        width: 100vw;
+        height: 100vw;
+        max-width: 512px;
+        max-height: 512px;
+      }
+      #sidebar {
+        width: 100%;
+        max-width: 512px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+      }
+      #status-panel { grid-column: 1 / -1; }
+      #move-list    { grid-column: 1 / -1; height: 100px; }
+      .btn { font-size: 0.75rem; padding: 0.4rem 0.5rem; }
+    }
   </style>
 </head>
 <body>
