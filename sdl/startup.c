@@ -22,6 +22,7 @@
  */
 
 #include "startup.h"
+#include "save.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,13 +31,7 @@
  * Forward declarations for sub-functions to be recovered next
  * ---------------------------------------------------------------------- */
 
-/*
- * RECOVER NEXT (step 3a): validate / load an existing save file.
- * Original: FUN_243e_0230() -- src/chess.c:16611
- * This is called in two paths: once when memory is tight (to restore a
- * previously compacted state) and once unconditionally before overlay setup.
- */
-__attribute__((unused)) static int save_state_load(void);   /* stub defined below */
+/* save_file_probe() is now in sdl/save.c -- step 3a wired up. */
 
 /*
  * RECOVER NEXT (step 3b): locate and map the compressed overlay buffer
@@ -111,15 +106,16 @@ int chess_startup(SDL_Renderer *renderer, int argc, char *argv[])
      *   memory flag.  One branch also issues int-21h file-open calls
      *   (AH=3Dh) before invoking the validator.
      *
-     * RECOVER NEXT (step 3-3): call save_state_load() once that
-     * function's body has been ported (step 3a).
+     * RECOVER NEXT (step 3-3 cont.): save_file_probe() is now wired in;
+     * uncomment the call below once the file-open block inside save.c
+     * (step 3a-i) has been ported.
      *
-     * if (save_state_load() != 0) {
-     *     fprintf(stderr, "[startup] save state invalid or absent\n");
+     * if (save_file_probe() != 0) {
+     *     fprintf(stderr, "[startup] save probe failed\n");
      *     // not fatal -- start a fresh game
      * }
      * ------------------------------------------------------------------ */
-    printf("[startup] save state: stub\n");
+    save_file_probe();   /* step 3a: runs stubs, safe to call now */
 
 
     /* ------------------------------------------------------------------
@@ -167,17 +163,6 @@ int chess_startup(SDL_Renderer *renderer, int argc, char *argv[])
 /* =========================================================================
  * Sub-function stubs  (each replaced by its own file when ported)
  * ======================================================================= */
-
-/*
- * save_state_load  --  stub for FUN_243e_0230 (step 3a)
- * Original: FUN_243e_0230() -- src/chess.c:16611
- */
-static int save_state_load(void)
-{
-    printf("[startup] save_state_load: stub\n");
-    /* RECOVER NEXT (step 3a): port FUN_243e_0230 from src/chess.c:16611 */
-    return 0;
-}
 
 /*
  * overlay_locate  --  stub for overlay magic-byte scan (step 3b)
