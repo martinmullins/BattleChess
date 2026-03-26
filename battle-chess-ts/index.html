@@ -98,29 +98,40 @@
     #board-canvas { touch-action: none; max-width: 100%; }
 
     @media (max-width: 600px) {
-      h1 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+      body {
+        /* Don't try to vertically centre — content can exceed portrait height */
+        justify-content: flex-start;
+        padding: 0.5rem 0;
+        /* iPhone notch / home-bar safe areas */
+        padding-left:   env(safe-area-inset-left);
+        padding-right:  env(safe-area-inset-right);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      h1 { font-size: 1.2rem; margin-bottom: 0.4rem; }
       #game-container {
         flex-direction: column;
         align-items: center;
-        gap: 0.75rem;
-        padding: 0 4px;
+        gap: 0.5rem;
+        width: 100%;
       }
       #board-canvas {
-        /* Scale the 512px canvas to fill the viewport width */
-        width: 100vw;
-        height: 100vw;
+        /* Fill the available width without causing horizontal overflow.
+           100vw includes the scrollbar and overflows; width:100% does not. */
+        width: 100%;
         max-width: 512px;
-        max-height: 512px;
+        aspect-ratio: 1 / 1; /* keep square; supported in all modern mobile browsers */
       }
       #sidebar {
         width: 100%;
         max-width: 512px;
+        padding: 0 4px;
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 0.5rem;
       }
-      #status-panel { grid-column: 1 / -1; }
-      #move-list    { grid-column: 1 / -1; height: 100px; }
+      #status-panel  { grid-column: 1 / -1; }
+      #play-as-panel { grid-column: 1 / -1; }
+      #move-list     { grid-column: 1 / -1; height: 70px; }
       .btn { font-size: 0.75rem; padding: 0.4rem 0.5rem; }
     }
   </style>
@@ -141,8 +152,8 @@
       </div>
       <button class="btn" id="btn-new-game">New Game</button>
       <button class="btn" id="btn-flip">Flip Board</button>
-      <div id="status-panel">
-        <h3>Play As</h3>
+      <div id="play-as-panel" style="background:#0d0d1a;border:1px solid #8b6914;padding:0.75rem;font-size:0.85rem;">
+        <h3 style="color:#ffd700;margin-bottom:0.5rem;font-size:0.8rem;letter-spacing:0.1em;">Play As</h3>
         <div style="display:flex;gap:0.5rem;margin-top:0.25rem;">
           <button class="btn" id="btn-play-white" style="flex:1">White</button>
           <button class="btn" id="btn-play-black" style="flex:1">Black</button>

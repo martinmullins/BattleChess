@@ -75,6 +75,7 @@ function buildDOM(): void {
     <button id="btn-flip"></button>
     <button id="btn-play-white"></button>
     <button id="btn-play-black"></button>
+    <div id="play-as-panel"></div>
     <div id="promotion-dialog" style="display:none">
       <button class="promo-btn" data-piece="Q">♛</button>
       <button class="promo-btn" data-piece="R">♜</button>
