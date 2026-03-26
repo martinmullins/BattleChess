@@ -9,6 +9,6 @@ test_*.o
 
 # Keep tools/runtime/*.o (they are committed as pre-built stubs)
 
-# Win32 build output
-win32/winmain
-win32/*.exe
+# SDL2 build output
+sdl/battlechess
+sdl/*.exe
