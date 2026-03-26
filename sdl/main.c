@@ -4,13 +4,13 @@
  * First step in porting the DOS Battle Chess decompilation to a native
  * Linux application backed by SDL2.
  *
- * Build:
- *   gcc $(pkg-config --cflags sdl2) -o battlechess main.c \
+ * Build (single file):
+ *   gcc $(pkg-config --cflags sdl2) -o battlechess main.c startup.c \
  *       $(pkg-config --libs sdl2)
  *
  * Original DOS entry chain:
  *   entry()          @ 243e:0001  (src/chess.c:16404)
- *     FUN_243e_0024()              -- main init, DOS int-21h calls
+ *     FUN_243e_0024()              -- main init  (-> sdl/startup.c)
  *
  * Recovery roadmap -- each "RECOVER NEXT (step N):" comment marks what
  * gets uncommented / implemented in the corresponding future step.
@@ -19,6 +19,7 @@
 #include <SDL2/SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "startup.h"
 
 /* -------------------------------------------------------------------------
  * Constants
@@ -32,13 +33,7 @@
  * Forward declarations for subsystems to be recovered
  * ---------------------------------------------------------------------- */
 
-/* RECOVER NEXT (step 3): maps to FUN_243e_0024() in src/chess.c.
- * Replace DOS int-21h calls with POSIX / SDL equivalents:
- *   - PSP command tail  → argc/argv
- *   - Memory alloc      → malloc / SDL_malloc
- *   - File I/O          → fopen / SDL_RWops
- *   - Video mode set    → SDL_CreateWindow / SDL_CreateRenderer  */
-static int  game_init(SDL_Renderer *renderer);
+/* chess_startup() is now in sdl/startup.c -- step 3 wired up. */
 
 /* RECOVER NEXT (step 4): inner update loop from FUN_243e_0024().
  * Drives the chess engine one logical frame and returns non-zero
@@ -55,8 +50,6 @@ static void game_shutdown(void);
  * ======================================================================= */
 int main(int argc, char *argv[])
 {
-    (void)argc;
-    (void)argv;
 
     /* --- SDL2 init -------------------------------------------------------- */
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
@@ -91,8 +84,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    /* --- Game init -------------------------------------------------------- */
-    if (game_init(renderer) != 0) {
+    /* --- Game init (step 3: wired to chess_startup in sdl/startup.c) ----- */
+    if (chess_startup(renderer, argc, argv) != 0) {
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
@@ -143,28 +136,8 @@ int main(int argc, char *argv[])
 
 
 /* =========================================================================
- * Subsystem stubs
- * =========================================================================
- * Replace each stub one at a time as the corresponding DOS code is ported.
+ * Subsystem stubs  (game_init promoted to sdl/startup.c as chess_startup)
  * ======================================================================= */
-
-/*
- * game_init  --  stub for FUN_243e_0024() (step 3)
- *
- * The real init will:
- *   - Parse command-line arguments (replaces DOS PSP tail scan)
- *   - Allocate the 353 KB overlay buffer (DAT_243e_051f = 0x43e4)
- *   - Load piece animation data from ALLCANM1 / ALLCANM2 via SDL_RWops
- *   - Initialise chess engine state tables
- *   - Create SDL_Texture atlas for piece sprites
- */
-static int game_init(SDL_Renderer *renderer)
-{
-    (void)renderer;
-    printf("[BattleChess] game_init: stub -- nothing initialised yet\n");
-    /* RECOVER NEXT (step 3): call ported FUN_243e_0024() equivalent here */
-    return 0;
-}
 
 /*
  * game_tick  --  stub for the main update / render loop (step 4)
