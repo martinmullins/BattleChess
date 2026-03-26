@@ -1,0 +1,10 @@
+# Build output directory
+build/
+
+# Compiler/linker temporaries in root
+*.err
+chess.o
+chess_partial.o
+test_*.o
+
+# Keep tools/runtime/*.o (they are committed as pre-built stubs)
