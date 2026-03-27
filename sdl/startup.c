@@ -7,10 +7,10 @@
  * The DOS function did the following in order:
  *   1. Scan the PSP command tail for arguments   (src/chess.c:16469-16480)
  *                                                (disassembly: 243e:003e-243e:005a)
- *   2. Open save file; read 32-byte header;      (src/chess.c:16481-16488)
+ *   2. Open CHESS.EXE; read 32-byte MZ header;   (src/chess.c:16481-16488)
  *      seek to end for file size                 (disassembly: 243e:0060-243e:0083)
- *   3. Compare file size vs required and         (src/chess.c:16489-16515)
- *      set a low-memory/short-file flag          (disassembly: 243e:0085-243e:009c)
+ *   3. Compare header + size vs reference and    (src/chess.c:16489-16515)
+ *      set integrity/tamper flag if mismatch     (disassembly: 243e:0085-243e:00c0)
  *   4. Call FUN_243e_0230 -- startup prompt      (src/chess.c:16516-16527)
  *      (print menu, read key: w/f/b dispatch)    (disassembly: 243e:00be)
  *   5. Locate the overlay by paragraph scan      (src/chess.c:16528-16545)
@@ -25,7 +25,9 @@
  */
 
 #include "startup.h"
+#include "args.h"
 #include "save.h"
+#include "gamebin.h"
 #include "overlay.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,51 +43,62 @@ int chess_startup(SDL_Renderer *renderer, int argc, char *argv[])
     (void)renderer;
 
     /* ------------------------------------------------------------------
-     * Block 1: command-line argument parsing
+     * Block 1: command-line argument parsing -- step 3-1 wired (sdl/args.c)
      *
-     * DOS original (src/chess.c:16469-16480  disassembly: 243e:003e-243e:005a):
-     *   ES = word ptr ES:[0x2c]        ; ES → environment segment (from PSP)
-     *   SCASB.REPNE  looking for \0    ; skip env strings
-     *   CMP byte ptr ES:[DI], 0x0      ; double-NUL = end of env block
-     *   ADD DI, 0x3                    ; skip the word count + first char
-     *   MOV word ptr CS:[BP+0x434], DI ; save pointer to command tail
+     * DOS original (src/chess.c:16469-16480  disassembly: 243e:003e-243e:005b):
+     *   ES = word ptr ES:[0x2c]           ; ES → environment segment (PSP)
+     *   SCASB.REPNE  looking for \0       ; skip NUL-terminated env strings
+     *   CMP byte ptr ES:[DI], 0x0         ; double-NUL = end of env block
+     *   ADD DI, 0x3                       ; skip count word + first char
+     *   MOV word ptr CS:[BP + 0x434], DI  ; save exe-path offset (CS:0x0337)
      *
-     * RECOVER NEXT (step 3-1): parse argc/argv for the same flags the
-     * DOS version accepted (e.g. difficulty level, player side).
-     *
-     * const char *arg_difficulty = NULL;
-     * for (int i = 1; i < argc; i++) {
-     *     if (strcmp(argv[i], "-easy") == 0) arg_difficulty = argv[i];
-     * }
+     * args_parse() extracts argv[0] as the exe-path equivalent of the saved
+     * CS:[BP+0x434] pointer, and stores it in args.exe_path for forwarding
+     * to gamebin_check() (step 3-2-i) and overlay_locate() (step 3b-i).
      * ------------------------------------------------------------------ */
-    (void)argc;
-    (void)argv;
-    printf("[startup] arg parse: stub\n");
+    ArgsState args;
+    if (args_parse(&args, argc, argv) != 0) {
+        fprintf(stderr, "[startup] args_parse failed\n");
+        return -1;
+    }
 
 
     /* ------------------------------------------------------------------
-     * Block 2: save-file open + size check
+     * Block 2: game-binary integrity check -- step 3-2 wired (sdl/gamebin.c)
      *
-     * DOS original (src/chess.c:16481-16515  disassembly: 243e:0060-243e:009c):
-     *   AH=0x3d / INT 21h  -- open file (name from BP+0x434)
-     *   AH=0x3f / INT 21h  -- read 0x20 (32) bytes into BP+0x438
-     *   AX=0x4202/ INT 21h -- seek to end (get file size in DX:AX)
-     *   AH=0x3e / INT 21h  -- close file
-     *   CMP DX, CS:[BP+0x462]  ; compare size high word vs required
-     *   CMP AX, CS:[BP+0x460]  ; compare size low  word vs required
-     *   If size < required: MOV byte ptr CS:[BP+0x433], 0x1  (low-mem flag)
+     * DOS original (src/chess.c:16481-16515  disassembly: 243e:0060-243e:00c0):
+     *   Path found by PSP env scan → CS:[BP+0x434]  (243e:003c-005a)
+     *   AH=0x3d / INT 21h   open CHESS.EXE            (243e:0060-0067)
+     *   AH=0x3f / INT 21h   read 32 bytes → BP+0x438  (243e:0068-0075)
+     *   AX=0x4202/ INT 21h  seek to end → DX:AX size  (243e:0076-007c)
+     *   AH=0x3e / INT 21h   close file                 (243e:007d-0083)
+     *   CMP DX, CS:[BP+0x462]  compare size hi word    (243e:0085)
+     *   CMP AX, CS:[BP+0x460]  compare size lo word    (243e:0091)
+     *   → set CS:[BP+0x433]=1 if mismatch              (243e:009d)
+     *   CMPSW.REPE CX=16 SI=BP+0x438 DI=CS:0x0006      (243e:00b7)
+     *   → jump to CPAV prompt if mismatch              (243e:00b9)
      *
-     * RECOVER NEXT (step 3-2): open save file via fopen; fread 32 bytes;
-     * fseek/ftell for size; compare against required minimum.
+     * args.exe_path (from step 3-1 / args_parse) is passed as the path so
+     * that the file opened here matches the running binary, mirroring the
+     * DOS PSP env scan that stored the path at CS:[BP+0x434].
      *
-     * FILE *sf = fopen(SAVE_FILE_NAME, "rb");
-     * if (sf) {
-     *     uint8_t hdr[32]; fread(hdr, 1, 32, sf);
-     *     fseek(sf, 0, SEEK_END); long sz = ftell(sf); fclose(sf);
-     *     // compare sz against required (stored in startup data block)
-     * }
+     * RECOVER NEXT (step 3-2-i): gamebin_check() derives the CHESS.EXE.orig
+     * path from args.exe_path once the path-construction logic is clear.
      * ------------------------------------------------------------------ */
-    printf("[startup] save-file size check: stub\n");
+    {
+        GamebinStatus gbs = gamebin_check(args.exe_path);
+        if (gbs == GAMEBIN_MODIFIED) {
+            /* Integrity mismatch -- mirrors CS:[BP+0x433] = 1 path.
+             * In DOS this triggers the CPAV prompt (FUN_243e_0230) which
+             * is already called in Block 3 via save_file_probe().
+             * No extra action needed here; the prompt handles dispatch.
+             * src/chess.c:16491  disassembly: 243e:009d */
+            fprintf(stderr, "[startup] CPAV flag set (binary modified or missing)\n");
+        } else if (gbs == GAMEBIN_ERROR) {
+            fprintf(stderr, "[startup] game binary not found -- CPAV check skipped\n");
+        }
+        /* GAMEBIN_OK: fall through, CPAV prompt skipped in DOS (243e:0173) */
+    }
 
 
     /* ------------------------------------------------------------------
