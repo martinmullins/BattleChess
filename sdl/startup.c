@@ -2,20 +2,23 @@
  * sdl/startup.c  --  Battle Chess startup / initialisation (recovery step 3)
  *
  * Original source: src/chess.c, FUN_243e_0024 @ 243e:0024
+ *                  decompiled/CHESS_disassembly.asm  243e:0024-243e:022b
  *
  * The DOS function did the following in order:
  *   1. Scan the PSP command tail for arguments   (src/chess.c:16469-16480)
- *   2. Issue four DOS int-21h calls to query     (src/chess.c:16481-16488)
- *      available memory (AH=48h / AH=4Ah)
- *   3. Compare available vs required memory and  (src/chess.c:16489-16515)
- *      set an "insufficient memory" flag
- *   4. Call FUN_243e_0230 to validate / load     (src/chess.c:16516-16527)
- *      an existing save file
- *   5. Locate the overlay data inside the        (src/chess.c:16528-16570)
- *      executable image (magic-byte scan)
+ *                                                (disassembly: 243e:003e-243e:005a)
+ *   2. Open save file; read 32-byte header;      (src/chess.c:16481-16488)
+ *      seek to end for file size                 (disassembly: 243e:0060-243e:0083)
+ *   3. Compare file size vs required and         (src/chess.c:16489-16515)
+ *      set a low-memory/short-file flag          (disassembly: 243e:0085-243e:009c)
+ *   4. Call FUN_243e_0230 -- startup prompt      (src/chess.c:16516-16527)
+ *      (print menu, read key: w/f/b dispatch)    (disassembly: 243e:00be)
+ *   5. Locate the overlay by paragraph scan      (src/chess.c:16528-16545)
+ *      (CMPSW 4-word sig at ES:[6] vs ref)       (disassembly: 243e:00c8-243e:00df)
  *   6. Copy 14 bytes of overlay config to seg 0  (src/chess.c:16580-16588)
- *   7. Relocate internal segment pointers by     (src/chess.c:16589-16606)
- *      a load-offset and jump via a function ptr
+ *                                                (disassembly: 243e:01cd-243e:01d9)
+ *   7. Relocate internal segment pointers        (src/chess.c:16589-16606)
+ *      and far-jump into game code               (disassembly: 243e:01fa-243e:022b)
  *
  * Each numbered block below maps to one future recovery sub-step.
  * Uncomment the block when that sub-system has been ported.
@@ -23,36 +26,15 @@
 
 #include "startup.h"
 #include "save.h"
+#include "overlay.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-/* -------------------------------------------------------------------------
- * Forward declarations for sub-functions to be recovered next
- * ---------------------------------------------------------------------- */
-
-/* save_file_probe() is now in sdl/save.c -- step 3a wired up. */
-
-/*
- * RECOVER NEXT (step 3b): locate and map the compressed overlay buffer
- * that is appended to the DOS executable image.
- * Original: the magic-byte scan loop -- src/chess.c:16529-16545
- * SDL equivalent: SDL_RWops on the game binary or a dedicated data file.
- */
-__attribute__((unused)) static int overlay_locate(void);    /* stub defined below */
-
-/*
- * RECOVER NEXT (step 3c): relocate internal far-pointer tables after
- * the overlay is mapped at its runtime address.
- * Original: pointer-fixup loop + indirect jump -- src/chess.c:16589-16606
- */
-__attribute__((unused)) static int overlay_relocate(void);  /* stub defined below */
-
-
 /* =========================================================================
  * chess_startup
  *
- * Original: FUN_243e_0024() -- src/chess.c:16440
+ * Original: FUN_243e_0024() -- src/chess.c:16440  disassembly: 243e:0024
  * ======================================================================= */
 int chess_startup(SDL_Renderer *renderer, int argc, char *argv[])
 {
@@ -61,10 +43,12 @@ int chess_startup(SDL_Renderer *renderer, int argc, char *argv[])
     /* ------------------------------------------------------------------
      * Block 1: command-line argument parsing
      *
-     * DOS original (src/chess.c:16469-16480):
-     *   Scanned PSP segment 0x0000 from offset 0x80 (the command tail)
-     *   looking for double-NUL termination, then stored the pointer to
-     *   the first argument at stack+0x331.
+     * DOS original (src/chess.c:16469-16480  disassembly: 243e:003e-243e:005a):
+     *   ES = word ptr ES:[0x2c]        ; ES → environment segment (from PSP)
+     *   SCASB.REPNE  looking for \0    ; skip env strings
+     *   CMP byte ptr ES:[DI], 0x0      ; double-NUL = end of env block
+     *   ADD DI, 0x3                    ; skip the word count + first char
+     *   MOV word ptr CS:[BP+0x434], DI ; save pointer to command tail
      *
      * RECOVER NEXT (step 3-1): parse argc/argv for the same flags the
      * DOS version accepted (e.g. difficulty level, player side).
@@ -80,110 +64,92 @@ int chess_startup(SDL_Renderer *renderer, int argc, char *argv[])
 
 
     /* ------------------------------------------------------------------
-     * Block 2: memory availability check
+     * Block 2: save-file open + size check
      *
-     * DOS original (src/chess.c:16481-16515):
-     *   Four int-21h calls (AH=48h / AH=4Ah) queried and resized the
-     *   DOS memory arena.  If available paragraphs < required (0x43e4 =
-     *   353 KB), a low-memory flag was set at stack+0x198.
+     * DOS original (src/chess.c:16481-16515  disassembly: 243e:0060-243e:009c):
+     *   AH=0x3d / INT 21h  -- open file (name from BP+0x434)
+     *   AH=0x3f / INT 21h  -- read 0x20 (32) bytes into BP+0x438
+     *   AX=0x4202/ INT 21h -- seek to end (get file size in DX:AX)
+     *   AH=0x3e / INT 21h  -- close file
+     *   CMP DX, CS:[BP+0x462]  ; compare size high word vs required
+     *   CMP AX, CS:[BP+0x460]  ; compare size low  word vs required
+     *   If size < required: MOV byte ptr CS:[BP+0x433], 0x1  (low-mem flag)
      *
-     * RECOVER NEXT (step 3-2): on Linux/SDL2 use malloc/mmap; the 353 KB
-     * overlay buffer is always available so this check can be a no-op,
-     * but we keep the flag for future compatibility.
+     * RECOVER NEXT (step 3-2): open save file via fopen; fread 32 bytes;
+     * fseek/ftell for size; compare against required minimum.
      *
-     * #define OVERLAY_SIZE_BYTES  (0x43e4 * 16)   // ~353 KB
-     * void *overlay_buf = malloc(OVERLAY_SIZE_BYTES);
-     * if (!overlay_buf) { fprintf(stderr, "OOM\n"); return -1; }
+     * FILE *sf = fopen(SAVE_FILE_NAME, "rb");
+     * if (sf) {
+     *     uint8_t hdr[32]; fread(hdr, 1, 32, sf);
+     *     fseek(sf, 0, SEEK_END); long sz = ftell(sf); fclose(sf);
+     *     // compare sz against required (stored in startup data block)
+     * }
      * ------------------------------------------------------------------ */
-    printf("[startup] memory check: stub\n");
+    printf("[startup] save-file size check: stub\n");
 
 
     /* ------------------------------------------------------------------
-     * Block 3: save-state validation
+     * Block 3: startup prompt  (FUN_243e_0230)
      *
-     * DOS original (src/chess.c:16516-16527):
-     *   Calls FUN_243e_0230 in two different branches depending on the
-     *   memory flag.  One branch also issues int-21h file-open calls
-     *   (AH=3Dh) before invoking the validator.
+     * DOS original (src/chess.c:16516-16527  disassembly: 243e:00be):
+     *   CALL FUN_243e_0230
+     *   That function:
+     *     AH=0x9  / INT 21h  -- print prompt string at CS:[BP+0x36e]
+     *     AH=0x1  / INT 21h  -- read keystroke with echo → AL
+     *     AH=0x2  / INT 21h  -- write LF (0x0a) + CR (0x0d)
+     *     Dispatch on AL: 'w'/'W' → return, 'f'/'F' → overlay reload,
+     *                     'b'/'B' → sound init, else → loop
+     *   (disassembly: 243e:0230-243e:0264  src/chess.c:16639)
      *
-     * RECOVER NEXT (step 3-3 cont.): save_file_probe() is now wired in;
-     * uncomment the call below once the file-open block inside save.c
-     * (step 3a-i) has been ported.
+     * Note: this was initially named save_file_probe in save.c based on
+     * Ghidra's decompilation; the disassembly clarifies it is a prompt menu.
      *
-     * if (save_file_probe() != 0) {
-     *     fprintf(stderr, "[startup] save probe failed\n");
-     *     // not fatal -- start a fresh game
-     * }
+     * save_file_probe() is now in sdl/save.c -- step 3a wired up.
      * ------------------------------------------------------------------ */
     save_file_probe();   /* step 3a: runs stubs, safe to call now */
 
 
     /* ------------------------------------------------------------------
-     * Block 4: overlay location
+     * Block 4: overlay locate -- step 3b wired up (sdl/overlay.c)
      *
-     * DOS original (src/chess.c:16528-16545):
-     *   Scanned the loaded executable image from just past the code
-     *   segment looking for a 4-byte magic marker (value 0x00000006)
-     *   to find the start of the compressed overlay data.
+     * DOS original (src/chess.c:16528-16545  disassembly: 243e:00c8-243e:00df):
+     *   AX = CS - stored_segment        ; load_offset
+     *   ES = AX  (probe segment)
+     *   DI = 0x6
+     *   SI = CS:[BP+0x458]              ; 4-word reference signature
+     *   CX = 4
+     *   CMPSW.REPE  ES:DI, SI           ; compare at ES:[6]
+     *   INC AX / CMP AX, 0xa000        ; next paragraph / bounds check
      *
-     * RECOVER NEXT (step 3-4): call overlay_locate() once the overlay
-     * format has been mapped from CHESS_decompressed.bin.
-     *
-     * if (overlay_locate() != 0) {
-     *     fprintf(stderr, "[startup] overlay not found\n");
-     *     return -1;
-     * }
      * ------------------------------------------------------------------ */
-    printf("[startup] overlay locate: stub\n");
+    OverlayState ov;
+    if (overlay_locate(&ov) != 0) {
+        fprintf(stderr, "[startup] overlay not found\n");
+        return -1;
+    }
 
 
     /* ------------------------------------------------------------------
-     * Block 5: overlay relocation
+     * Block 5: overlay relocation -- step 3c wired up (sdl/overlay.c)
      *
-     * DOS original (src/chess.c:16580-16606):
-     *   Copied 14 bytes of config from the overlay into segment 0,
-     *   then walked an internal pointer table (count at *0x06, base at
-     *   *0x18) adding the load-offset iVar9 to each far-pointer pair.
-     *   Finally dispatched through a function pointer at stack+0x371.
+     * DOS original (src/chess.c:16578-16606  disassembly: 243e:01c0-243e:022b):
+     *   REP MOVSB  14 bytes → ES:0      ; config copy
+     *   Walk reloc table: ADD [SI+2],AX ; fix segment word in entry
+     *                     LES DI,[SI]   ; follow far ptr
+     *                     ADD ES:[DI],AX; fix target word
+     *                     ADD SI,4      ; next entry
+     *   ADD CS:[BP+0x476], AX           ; fix up stack
+     *   JMPF CS:[BP+0x474]             ; dispatch
      *
-     * RECOVER NEXT (step 3-5): call overlay_relocate() after the overlay
-     * buffer is mapped at a known virtual address.
-     *
-     * if (overlay_relocate() != 0) {
-     *     fprintf(stderr, "[startup] overlay relocation failed\n");
-     *     return -1;
-     * }
      * ------------------------------------------------------------------ */
-    printf("[startup] overlay relocate: stub\n");
+    if (overlay_relocate(&ov) != 0) {
+        fprintf(stderr, "[startup] overlay relocation failed\n");
+        free(ov.data);
+        return -1;
+    }
 
-    return 0;
-}
+    /* RECOVER NEXT: free ov.data only when the game is done using it,
+     * not here.  For now it is leaked (safe while stubs are in place). */
 
-
-/* =========================================================================
- * Sub-function stubs  (each replaced by its own file when ported)
- * ======================================================================= */
-
-/*
- * overlay_locate  --  stub for overlay magic-byte scan (step 3b)
- * Original: inline scan loop -- src/chess.c:16529-16545
- */
-static int overlay_locate(void)
-{
-    printf("[startup] overlay_locate: stub\n");
-    /* RECOVER NEXT (step 3b): open CHESS_decompressed.bin via SDL_RWops
-     * and locate the 4-byte magic marker 0x00000006. */
-    return 0;
-}
-
-/*
- * overlay_relocate  --  stub for pointer-fixup + dispatch (step 3c)
- * Original: pointer-fixup loop + indirect jump -- src/chess.c:16589-16606
- */
-static int overlay_relocate(void)
-{
-    printf("[startup] overlay_relocate: stub\n");
-    /* RECOVER NEXT (step 3c): walk the internal far-pointer table and
-     * apply the load-offset, then resolve the dispatch function pointer. */
     return 0;
 }
