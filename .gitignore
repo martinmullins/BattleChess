@@ -14,3 +14,4 @@ sdl/battlechess
 sdl/*.exe
 pipeline/harnesses/check_*
 pipeline/harnesses/fuzz_*
+pipeline/oracle/oracle_driver
