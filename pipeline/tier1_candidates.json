@@ -1,0 +1,119 @@
+{
+  "binary": "CHESS.EXE",
+  "decompiled_source": "src/chess.c",
+  "total_functions_scanned": 383,
+  "tier": 1,
+  "description": "Pure functions: no globals, no side effects, no pointer dereferences, no calls",
+  "candidates": [
+    {
+      "symbol": "FUN_1000_8f95",
+      "probable_name": "min_int",
+      "address": "1000:8f95",
+      "source_line": 8607,
+      "signature": "int (int, int)",
+      "body_lines": 3,
+      "fuzz_priority": 2,
+      "notes": "min(a, b); varargs ... is a Ghidra calling-convention artefact"
+    },
+    {
+      "symbol": "FUN_1000_8fa5",
+      "probable_name": "max_int",
+      "address": "1000:8fa5",
+      "source_line": 8620,
+      "signature": "int (int, int)",
+      "body_lines": 3,
+      "fuzz_priority": 3,
+      "notes": "max(a, b)"
+    },
+    {
+      "symbol": "FUN_1000_8fb5",
+      "probable_name": "abs_int",
+      "address": "1000:8fb5",
+      "source_line": 8633,
+      "signature": "int (int)",
+      "body_lines": 3,
+      "fuzz_priority": 4,
+      "notes": "abs(a); condition: 0 < a"
+    },
+    {
+      "symbol": "FUN_1000_d840",
+      "probable_name": "coord_to_zone",
+      "address": "1000:d840",
+      "source_line": 12471,
+      "signature": "int (int x, int y, int flag)",
+      "body_lines": 8,
+      "fuzz_priority": 10,
+      "notes": "Maps screen coordinates to board zone index [0-9]; returns 0xff for miss"
+    },
+    {
+      "symbol": "FUN_1000_d8f6",
+      "probable_name": "is_printable_ascii",
+      "address": "1000:d8f6",
+      "source_line": 12509,
+      "signature": "int (int)",
+      "body_lines": 3,
+      "fuzz_priority": 8,
+      "notes": "Returns 1 if input in [0x20, 0x7e], else 0"
+    },
+    {
+      "symbol": "FUN_1000_f1d6",
+      "probable_name": "div32_reg",
+      "address": "1000:f1d6",
+      "source_line": 14805,
+      "signature": "uint32 (uint16 p1, uint16 p2, uint16 p3, uint16 p4)",
+      "body_lines": 9,
+      "fuzz_priority": 11,
+      "notes": "32-bit division via 16-bit carry arithmetic; params passed in registers (Ghidra shows them as param_N=0)"
+    },
+    {
+      "symbol": "FUN_1000_fd4e",
+      "probable_name": "offset_with_sentinel",
+      "address": "1000:fd4e",
+      "source_line": 15907,
+      "signature": "int (int)",
+      "body_lines": 4,
+      "fuzz_priority": 9,
+      "notes": "Adds 0x14; substitutes -0x7234 -> -0x72d4 (wrap-around guard)"
+    },
+    {
+      "symbol": "FUN_1000_fdf2",
+      "probable_name": "abs_int2",
+      "address": "1000:fdf2",
+      "source_line": 15978,
+      "signature": "int (int)",
+      "body_lines": 3,
+      "fuzz_priority": 5,
+      "notes": "abs(a); condition: a < 0; cross-checks FUN_1000_8fb5"
+    },
+    {
+      "symbol": "FUN_1000_fe0c",
+      "probable_name": "max_int2",
+      "address": "1000:fe0c",
+      "source_line": 15991,
+      "signature": "int (int, int)",
+      "body_lines": 3,
+      "fuzz_priority": 6,
+      "notes": "max(a, b); returns via param_2; cross-checks FUN_1000_8fa5"
+    },
+    {
+      "symbol": "FUN_1000_fe2b",
+      "probable_name": "min_int2",
+      "address": "1000:fe2b",
+      "source_line": 16004,
+      "signature": "int (int, int)",
+      "body_lines": 3,
+      "fuzz_priority": 7,
+      "notes": "min(a, b); returns via param_2; cross-checks FUN_1000_8f95"
+    },
+    {
+      "symbol": "FUN_1000_fe4a",
+      "probable_name": "is_odd",
+      "address": "1000:fe4a",
+      "source_line": 16017,
+      "signature": "uint (uint)",
+      "body_lines": 1,
+      "fuzz_priority": 1,
+      "notes": "param_1 & 1; simplest possible oracle"
+    }
+  ]
+}
