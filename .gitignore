@@ -12,3 +12,6 @@ test_*.o
 # SDL2 build output
 sdl/battlechess
 sdl/*.exe
+pipeline/harnesses/check_*
+pipeline/harnesses/fuzz_*
+pipeline/oracle/oracle_driver

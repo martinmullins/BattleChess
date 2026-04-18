@@ -1,0 +1,121 @@
+{
+  "summary": {
+    "tier1_confirmed": 11,
+    "total": 11,
+    "avg_pass_rate": 1.0,
+    "avg_type_score": 0.67,
+    "avg_loc_delta": 1.8
+  },
+  "functions": [
+    {
+      "symbol": "FUN_1000_8f95",
+      "probable_name": "min_int",
+      "pass_rate": 1.0,
+      "type_score": 0.7,
+      "decomp_loc": 3,
+      "ref_loc": 1,
+      "loc_delta": 2,
+      "tier1_confirmed": true
+    },
+    {
+      "symbol": "FUN_1000_8fa5",
+      "probable_name": "max_int",
+      "pass_rate": 1.0,
+      "type_score": 0.7,
+      "decomp_loc": 3,
+      "ref_loc": 1,
+      "loc_delta": 2,
+      "tier1_confirmed": true
+    },
+    {
+      "symbol": "FUN_1000_8fb5",
+      "probable_name": "abs_int",
+      "pass_rate": 1.0,
+      "type_score": 0.7,
+      "decomp_loc": 3,
+      "ref_loc": 1,
+      "loc_delta": 2,
+      "tier1_confirmed": true
+    },
+    {
+      "symbol": "FUN_1000_d840",
+      "probable_name": "coord_to_zone",
+      "pass_rate": 1.0,
+      "type_score": 0.7,
+      "decomp_loc": 3,
+      "ref_loc": 4,
+      "loc_delta": -1,
+      "tier1_confirmed": true
+    },
+    {
+      "symbol": "FUN_1000_d8f6",
+      "probable_name": "is_printable_ascii",
+      "pass_rate": 1.0,
+      "type_score": 0.55,
+      "decomp_loc": 3,
+      "ref_loc": 1,
+      "loc_delta": 2,
+      "tier1_confirmed": true
+    },
+    {
+      "symbol": "FUN_1000_f1d6",
+      "probable_name": "div32_reg",
+      "pass_rate": 1.0,
+      "type_score": 0.4,
+      "decomp_loc": 10,
+      "ref_loc": 5,
+      "loc_delta": 5,
+      "tier1_confirmed": true
+    },
+    {
+      "symbol": "FUN_1000_fd4e",
+      "probable_name": "offset_with_sentinel",
+      "pass_rate": 1.0,
+      "type_score": 0.7,
+      "decomp_loc": 4,
+      "ref_loc": 3,
+      "loc_delta": 1,
+      "tier1_confirmed": true
+    },
+    {
+      "symbol": "FUN_1000_fdf2",
+      "probable_name": "abs_int2",
+      "pass_rate": 1.0,
+      "type_score": 0.7,
+      "decomp_loc": 3,
+      "ref_loc": 1,
+      "loc_delta": 2,
+      "tier1_confirmed": true
+    },
+    {
+      "symbol": "FUN_1000_fe0c",
+      "probable_name": "max_int2",
+      "pass_rate": 1.0,
+      "type_score": 0.7,
+      "decomp_loc": 3,
+      "ref_loc": 1,
+      "loc_delta": 2,
+      "tier1_confirmed": true
+    },
+    {
+      "symbol": "FUN_1000_fe2b",
+      "probable_name": "min_int2",
+      "pass_rate": 1.0,
+      "type_score": 0.7,
+      "decomp_loc": 3,
+      "ref_loc": 1,
+      "loc_delta": 2,
+      "tier1_confirmed": true
+    },
+    {
+      "symbol": "FUN_1000_fe4a",
+      "probable_name": "is_odd",
+      "pass_rate": 1.0,
+      "type_score": 0.8,
+      "decomp_loc": 2,
+      "ref_loc": 1,
+      "loc_delta": 1,
+      "tier1_confirmed": true
+    }
+  ]
+}
