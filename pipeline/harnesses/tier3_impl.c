@@ -61,3 +61,53 @@ void FUN_1000_8a64(void)
         GSEG(SEG_TS_CLAMP_H, int16_t)  = 0;
     }
 }
+
+/* ---- FUN_1000_2cac @ 1000:2cac  save_game_regs_b  (src line ~3290) ---- */
+/* Same 8 SRC addresses as FUN_1000_2c46; writes to the alternate slot-B bank. */
+void FUN_1000_2cac(void)
+{
+    uint16_t uVar1;
+    GSEG(SEG_GR_DSTB_0, uint16_t) = GSEG(SEG_GR_SRC_0, uint16_t);
+    GSEG(SEG_GR_DSTB_1, uint16_t) = GSEG(SEG_GR_SRC_1, uint16_t);
+    GSEG(SEG_GR_DSTB_2, uint16_t) = GSEG(SEG_GR_SRC_2, uint16_t);
+    GSEG(SEG_GR_DSTB_3, uint16_t) = GSEG(SEG_GR_SRC_3, uint16_t);
+    GSEG(SEG_GR_DSTB_4, uint16_t) = GSEG(SEG_GR_SRC_4, uint16_t);
+    GSEG(SEG_GR_DSTB_5, uint16_t) = GSEG(SEG_GR_SRC_5, uint16_t);
+    uVar1 = GSEG(SEG_GR_SRC_7, uint16_t);
+    GSEG(SEG_GR_DSTB_6, uint16_t) = GSEG(SEG_GR_SRC_6, uint16_t);
+    GSEG(SEG_GR_DSTB_7, uint16_t) = uVar1;
+}
+
+/* ---- FUN_1000_2ce0 @ 1000:2ce0  restore_game_regs_b  (src line ~3308) ---- */
+/* Exact inverse of FUN_1000_2cac. */
+void FUN_1000_2ce0(void)
+{
+    uint16_t uVar1;
+    GSEG(SEG_GR_SRC_0, uint16_t) = GSEG(SEG_GR_DSTB_0, uint16_t);
+    GSEG(SEG_GR_SRC_1, uint16_t) = GSEG(SEG_GR_DSTB_1, uint16_t);
+    GSEG(SEG_GR_SRC_2, uint16_t) = GSEG(SEG_GR_DSTB_2, uint16_t);
+    GSEG(SEG_GR_SRC_3, uint16_t) = GSEG(SEG_GR_DSTB_3, uint16_t);
+    GSEG(SEG_GR_SRC_4, uint16_t) = GSEG(SEG_GR_DSTB_4, uint16_t);
+    GSEG(SEG_GR_SRC_5, uint16_t) = GSEG(SEG_GR_DSTB_5, uint16_t);
+    uVar1 = GSEG(SEG_GR_DSTB_7, uint16_t);
+    GSEG(SEG_GR_SRC_6, uint16_t) = GSEG(SEG_GR_DSTB_6, uint16_t);
+    GSEG(SEG_GR_SRC_7, uint16_t) = uVar1;
+}
+
+/* ---- FUN_1000_29b9 @ 1000:29b9  init_callback_table  (src line ~3105) ---- */
+/*
+ * Writes 8 DOS far-pointers (offset:segment pairs) to fixed segment addresses.
+ * All share the same code segment 0x5cc2; offsets identify each callback entry
+ * point.  In the harness these are treated as opaque uint16 constants.
+ */
+void FUN_1000_29b9(void)
+{
+    GSEG(SEG_CB0_OFF, uint16_t) = 0x2cee;  GSEG(SEG_CB0_SEG, uint16_t) = 0x5cc2;
+    GSEG(SEG_CB1_OFF, uint16_t) = 0x2d0e;  GSEG(SEG_CB1_SEG, uint16_t) = 0x5cc2;
+    GSEG(SEG_CB2_OFF, uint16_t) = 0x2d8a;  GSEG(SEG_CB2_SEG, uint16_t) = 0x5cc2;
+    GSEG(SEG_CB3_OFF, uint16_t) = 0x2dbe;  GSEG(SEG_CB3_SEG, uint16_t) = 0x5cc2;
+    GSEG(SEG_CB4_OFF, uint16_t) = 0x2b2e;  GSEG(SEG_CB4_SEG, uint16_t) = 0x5cc2;
+    GSEG(SEG_CB5_OFF, uint16_t) = 0x2b4e;  GSEG(SEG_CB5_SEG, uint16_t) = 0x5cc2;
+    GSEG(SEG_CB6_OFF, uint16_t) = 0x2bca;  GSEG(SEG_CB6_SEG, uint16_t) = 0x5cc2;
+    GSEG(SEG_CB7_OFF, uint16_t) = 0x2bfe;  GSEG(SEG_CB7_SEG, uint16_t) = 0x5cc2;
+}

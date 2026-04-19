@@ -44,7 +44,10 @@ TIER2_TARGETS := \
 TIER3_TARGETS := \
     fuzz_save_game_regs \
     fuzz_restore_game_regs \
-    fuzz_clamp_text_size
+    fuzz_clamp_text_size \
+    fuzz_save_game_regs_b \
+    fuzz_restore_game_regs_b \
+    fuzz_init_callback_table
 
 TARGETS := $(TIER1_TARGETS) $(TIER2_TARGETS) $(TIER3_TARGETS)
 
@@ -71,7 +74,9 @@ fuzz_pack_char_cell fuzz_snapshot_viewport fuzz_push_viewport: %: %.c $(IMPL2) t
 	$(CC) $(CFLAGS_FUZZ) -o $@ $< $(IMPL2)
 
 # Tier 3 harnesses link seg_storage.c (provides g_chess_seg) + tier3_impl.c
-fuzz_save_game_regs fuzz_restore_game_regs fuzz_clamp_text_size: %: %.c $(IMPL3) $(SEG) tier3_impl.h tier2_seg.h ghidra_compat.h
+fuzz_save_game_regs fuzz_restore_game_regs fuzz_clamp_text_size \
+fuzz_save_game_regs_b fuzz_restore_game_regs_b fuzz_init_callback_table: \
+    %: %.c $(IMPL3) $(SEG) tier3_impl.h tier2_seg.h ghidra_compat.h
 	$(CC) $(CFLAGS_FUZZ) -o $@ $< $(IMPL3) $(SEG)
 
 # --- Standalone logic check (no libFuzzer runtime needed) ---

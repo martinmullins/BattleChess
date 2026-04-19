@@ -135,6 +135,27 @@ TIER3_REFS = {
             if (h < 1 && (h < 0 || w < 3)) { w = 3; h = 0; }
         }"""),
         5),
+    "FUN_1000_2cac": ("save_game_regs_b",
+        textwrap.dedent("""\
+        void save_game_regs_b(void) {
+            dstb[0..7] = src[0..7];   /* same SRC, alternate slot-B bank */
+        }"""),
+        3),
+    "FUN_1000_2ce0": ("restore_game_regs_b",
+        textwrap.dedent("""\
+        void restore_game_regs_b(void) {
+            src[0..7] = dstb[0..7];   /* exact inverse of save_game_regs_b */
+        }"""),
+        3),
+    "FUN_1000_29b9": ("init_callback_table",
+        textwrap.dedent("""\
+        void init_callback_table(void) {
+            cb[0] = {0x2cee, 0x5cc2}; cb[1] = {0x2d0e, 0x5cc2};
+            cb[2] = {0x2d8a, 0x5cc2}; cb[3] = {0x2dbe, 0x5cc2};
+            cb[4] = {0x2b2e, 0x5cc2}; cb[5] = {0x2b4e, 0x5cc2};
+            cb[6] = {0x2bca, 0x5cc2}; cb[7] = {0x2bfe, 0x5cc2};
+        }"""),
+        9),
 }
 
 ALL_REFS = {**TIER1_REFS, **TIER2_REFS, **TIER3_REFS}

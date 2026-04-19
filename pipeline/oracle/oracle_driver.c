@@ -412,6 +412,79 @@ static void sweep_clamp_text_size(void)
     }
 }
 
+static const uint16_t T3_DSTB_ADDRS[8] = {
+    SEG_GR_DSTB_0, SEG_GR_DSTB_1, SEG_GR_DSTB_2, SEG_GR_DSTB_3,
+    SEG_GR_DSTB_4, SEG_GR_DSTB_5, SEG_GR_DSTB_6, SEG_GR_DSTB_7,
+};
+
+static void sweep_save_game_regs_b(void)
+{
+    AddrSpec specs[16];
+    for (int i = 0; i < 8; i++) specs[i]   = (AddrSpec){T3_SRC_ADDRS[i],  1};
+    for (int i = 0; i < 8; i++) specs[8+i] = (AddrSpec){T3_DSTB_ADDRS[i], 1};
+    uint16_t before[16], after[16];
+
+    static const uint16_t SETS[][8] = {
+        {0,0,0,0,0,0,0,0},
+        {1,2,3,4,5,6,7,8},
+        {0xFFFF,0x0001,0x8000,0x7FFF,0xAAAA,0x5555,0xFF00,0x00FF},
+    };
+    for (int s = 0; s < 3; s++) {
+        memset(g_chess_seg, 0, sizeof(g_chess_seg));
+        for (int i = 0; i < 8; i++)
+            GSEG(T3_SRC_ADDRS[i], uint16_t) = SETS[s][i];
+        snap(specs, 16, before);
+        FUN_1000_2cac();
+        snap(specs, 16, after);
+        emit_seg_delta("FUN_1000_2cac", 3, NULL, (long long)-0x8000000000000000LL,
+                       specs, 16, before, after);
+    }
+}
+
+static void sweep_restore_game_regs_b(void)
+{
+    AddrSpec specs[16];
+    for (int i = 0; i < 8; i++) specs[i]   = (AddrSpec){T3_DSTB_ADDRS[i], 1};
+    for (int i = 0; i < 8; i++) specs[8+i] = (AddrSpec){T3_SRC_ADDRS[i],  1};
+    uint16_t before[16], after[16];
+
+    static const uint16_t SETS[][8] = {
+        {0,0,0,0,0,0,0,0},
+        {1,2,3,4,5,6,7,8},
+        {0xFFFF,0x0001,0x8000,0x7FFF,0xAAAA,0x5555,0xFF00,0x00FF},
+    };
+    for (int s = 0; s < 3; s++) {
+        memset(g_chess_seg, 0, sizeof(g_chess_seg));
+        for (int i = 0; i < 8; i++)
+            GSEG(T3_DSTB_ADDRS[i], uint16_t) = SETS[s][i];
+        snap(specs, 16, before);
+        FUN_1000_2ce0();
+        snap(specs, 16, after);
+        emit_seg_delta("FUN_1000_2ce0", 3, NULL, (long long)-0x8000000000000000LL,
+                       specs, 16, before, after);
+    }
+}
+
+static void sweep_init_callback_table(void)
+{
+    /* No variable inputs — one record confirming constant writes. */
+    static const AddrSpec specs[] = {
+        {SEG_CB0_OFF,1},{SEG_CB0_SEG,1},{SEG_CB1_OFF,1},{SEG_CB1_SEG,1},
+        {SEG_CB2_OFF,1},{SEG_CB2_SEG,1},{SEG_CB3_OFF,1},{SEG_CB3_SEG,1},
+        {SEG_CB4_OFF,1},{SEG_CB4_SEG,1},{SEG_CB5_OFF,1},{SEG_CB5_SEG,1},
+        {SEG_CB6_OFF,1},{SEG_CB6_SEG,1},{SEG_CB7_OFF,1},{SEG_CB7_SEG,1},
+    };
+    int n = 16;
+    uint16_t before[16], after[16];
+
+    memset(g_chess_seg, 0, sizeof(g_chess_seg));
+    snap(specs, n, before);
+    FUN_1000_29b9();
+    snap(specs, n, after);
+    emit_seg_delta("FUN_1000_29b9", 3, NULL, (long long)-0x8000000000000000LL,
+                   specs, n, before, after);
+}
+
 /* =========================================================================
  * main
  * ========================================================================= */
@@ -432,9 +505,13 @@ int main(void)
     sweep_set_text_cursor();
     sweep_handle_nav_key();
     sweep_snapshot_viewport();
-    /* Tier 3 */
+    /* Tier 3 — slot A */
     sweep_save_game_regs();
     sweep_restore_game_regs();
     sweep_clamp_text_size();
+    /* Tier 3 — slot B + callback table */
+    sweep_save_game_regs_b();
+    sweep_restore_game_regs_b();
+    sweep_init_callback_table();
     return 0;
 }
