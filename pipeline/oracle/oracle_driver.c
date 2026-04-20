@@ -485,6 +485,131 @@ static void sweep_init_callback_table(void)
                    specs, n, before, after);
 }
 
+static void sweep_pack_char_cell(void)
+{
+    /* Output addresses: use a safe base 0x6000; vary col 0–3. */
+    static const uint16_t BASE = 0x6000;
+    static const uint8_t  COLS[] = {0, 1, 2, 3};
+    static const uint8_t  CHARS[] = {' ', 'A', 0x00, 0xFF};
+    static const uint8_t  FG[] = {0, 1, 2, 3};
+    static const uint8_t  BG[] = {0, 1, 2, 3};
+    static const int8_t   FLAGS[] = {0, 1};  /* bold/uline/blink */
+
+    AddrSpec specs[4];
+    specs[0] = (AddrSpec){SEG_CHAR_VAL,    1};
+    specs[1] = (AddrSpec){SEG_FG_COLOR,    1};
+    specs[2] = (AddrSpec){SEG_BG_COLOR,    1};
+    specs[3] = (AddrSpec){SEG_TEXT_BOLD,   1};
+    /* We snapshot outputs separately since they're at computed addresses. */
+
+    for (int ci = 0; ci < 4; ci++) {
+        for (int fi = 0; fi < 4; fi++) {
+            for (int bi = 0; bi < 4; bi++) {
+                for (int col = 0; col < 4; col++) {
+                    for (int bold = 0; bold < 2; bold++) {
+                        memset(g_chess_seg, 0, sizeof(g_chess_seg));
+                        GSEG(SEG_CHAR_VAL,    uint8_t) = CHARS[ci];
+                        GSEG(SEG_FG_COLOR,    uint8_t) = FG[fi];
+                        GSEG(SEG_BG_COLOR,    uint8_t) = BG[bi];
+                        GSEG(SEG_TEXT_BOLD,   int8_t)  = FLAGS[bold];
+                        GSEG(SEG_TEXT_ULINE,  int8_t)  = FLAGS[bold];
+                        GSEG(SEG_TEXT_BLINK,  int8_t)  = 0;
+
+                        uint16_t off = (uint16_t)(BASE + (unsigned)COLS[col] * 2);
+                        FUN_1000_931c(BASE, COLS[col]);
+
+                        uint8_t out_char = GSEG(off,     uint8_t);
+                        uint8_t out_attr = GSEG(off + 1, uint8_t);
+
+                        printf("{\"fn\":\"FUN_1000_931c\",\"tier\":2,"
+                               "\"args\":[%u,%u],"
+                               "\"seg_in\":{"
+                               "\"%x\":%u,\"%x\":%u,\"%x\":%u,"
+                               "\"%x\":%u,\"%x\":%u},"
+                               "\"seg_out\":{\"%x\":%u,\"%x\":%u}}\n",
+                               (unsigned)BASE, (unsigned)COLS[col],
+                               SEG_CHAR_VAL, CHARS[ci],
+                               SEG_FG_COLOR, FG[fi],
+                               SEG_BG_COLOR, BG[bi],
+                               SEG_TEXT_BOLD,  (unsigned)(uint8_t)FLAGS[bold],
+                               SEG_TEXT_ULINE, (unsigned)(uint8_t)FLAGS[bold],
+                               (unsigned)off, out_char,
+                               (unsigned)(off+1), out_attr);
+                    }
+                }
+            }
+        }
+    }
+}
+
+static void sweep_flag_byte_check(void)
+{
+    /* Sweep param_1 over [0, 255] with flag byte 0 and 1. */
+    static const AddrSpec specs_dummy[] = {{SEG_FLAG_TABLE, 1}};
+    (void)specs_dummy;
+    for (int p = 0; p <= 255; p++) {
+        for (int flag = 0; flag <= 1; flag++) {
+            memset(g_chess_seg, 0, sizeof(g_chess_seg));
+            GSEG((uint16_t)(p + SEG_FLAG_TABLE), uint8_t) = (uint8_t)flag;
+            int result = FUN_1000_f1bc(p);
+            printf("{\"fn\":\"FUN_1000_f1bc\",\"tier\":3,"
+                   "\"args\":[%d],"
+                   "\"seg_in\":{\"%x\":%d},"
+                   "\"seg_out\":{\"%x\":%d},"
+                   "\"ret\":%d}\n",
+                   p,
+                   (unsigned)(p + SEG_FLAG_TABLE), flag,
+                   (unsigned)(p + SEG_FLAG_TABLE), flag,
+                   result);
+        }
+    }
+}
+
+static void sweep_compute_row_bitmasks(void)
+{
+    /* A few representative board configurations. */
+    struct { uint8_t board[64]; int param; } cases[] = {
+        /* All empty */
+        {{ 0 }, 0},
+        {{ 0 }, 1},
+        /* Single player-A piece at (0,0) */
+        {{ 0x01 }, 1},
+        {{ 0x01 }, 0},
+        /* Single player-B piece at (0,0) */
+        {{ 0x41 }, 0},
+        {{ 0x41 }, 1},
+        /* Full board: alternating A/B */
+        {{ 0 }, 0},  /* will be overridden below */
+    };
+    /* Fill alternating case */
+    for (int i = 0; i < 64; i++) cases[6].board[i] = (i % 2 == 0) ? 0x01 : 0x41;
+    cases[6].param = 1;
+
+    int ncases = 7;
+    /* Include 32 uint16_t words covering the 64 board bytes (input) +
+     * 4 uint16_t words covering the 8 row bitmask bytes (output) so that
+     * different board configurations produce distinct seg_in keys. */
+    AddrSpec specs[36];
+    for (int i = 0; i < 32; i++)
+        specs[i] = (AddrSpec){(uint16_t)(SEG_BOARD_STATE + i * 2), 1};
+    for (int r = 0; r < 4; r++)
+        specs[32 + r] = (AddrSpec){(uint16_t)(SEG_ROW_BMASK_0 + r * 2), 1};
+    uint16_t before[36], after[36];
+
+    for (int c = 0; c < ncases; c++) {
+        memset(g_chess_seg, 0, sizeof(g_chess_seg));
+        for (int i = 0; i < 64; i++)
+            GSEG((uint16_t)(SEG_BOARD_STATE + i), uint8_t) = cases[c].board[i];
+        snap(specs, 36, before);
+        FUN_1000_fce8(cases[c].param);
+        snap(specs, 36, after);
+        char args[16];
+        snprintf(args, sizeof(args), "[%d]", cases[c].param);
+        emit_seg_delta("FUN_1000_fce8", 3, args, (long long)-0x8000000000000000LL,
+                       specs, 36, before, after);
+    }
+}
+
 /* =========================================================================
  * main
  * ========================================================================= */
@@ -503,6 +628,7 @@ int main(void)
     /* Tier 2 */
     sweep_clear_anim_flag();
     sweep_set_text_cursor();
+    sweep_pack_char_cell();
     sweep_handle_nav_key();
     sweep_snapshot_viewport();
     /* Tier 3 — slot A */
@@ -513,5 +639,8 @@ int main(void)
     sweep_save_game_regs_b();
     sweep_restore_game_regs_b();
     sweep_init_callback_table();
+    /* Tier 3 — flag_byte_check + compute_row_bitmasks */
+    sweep_flag_byte_check();
+    sweep_compute_row_bitmasks();
     return 0;
 }

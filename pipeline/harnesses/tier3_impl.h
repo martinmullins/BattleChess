@@ -75,11 +75,20 @@ static const uint16_t CB_SEG_ADDRS[8] = {
     SEG_CB4_SEG, SEG_CB5_SEG, SEG_CB6_SEG, SEG_CB7_SEG,
 };
 
+/* flag_byte_check (FUN_1000_f1bc) */
+#define SEG_FLAG_TABLE   0x4a1f  /* byte[] — flag table, indexed by param_1 */
+
+/* compute_row_bitmasks (FUN_1000_fce8) */
+#define SEG_BOARD_STATE  0x1166  /* byte[64] — 8×8 board (row-major)        */
+#define SEG_ROW_BMASK_0  0x9230  /* byte[8]  — row bitmasks (= -0x6dd0+0)   */
+
 void FUN_1000_2c46(void);
 void FUN_1000_2c79(void);
 void FUN_1000_8a64(void);
 void FUN_1000_2cac(void);
 void FUN_1000_2ce0(void);
 void FUN_1000_29b9(void);
+int  FUN_1000_f1bc(int param_1);
+void FUN_1000_fce8(int param_1);
 
 #endif /* TIER3_IMPL_H */

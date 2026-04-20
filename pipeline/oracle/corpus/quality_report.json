@@ -1,13 +1,13 @@
 {
   "summary": {
-    "total": 23,
+    "total": 25,
     "tier1": 11,
     "tier2": 6,
-    "tier3": 6,
-    "tier_confirmed": 23,
+    "tier3": 8,
+    "tier_confirmed": 25,
     "avg_pass_rate": 1.0,
-    "avg_type_score": 0.48,
-    "avg_loc_delta": 1.3
+    "avg_type_score": 0.47,
+    "avg_loc_delta": 1.4
   },
   "functions": [
     {
@@ -157,7 +157,7 @@
       "symbol": "FUN_1000_931c",
       "probable_name": "pack_char_cell",
       "tier": 2,
-      "pass_rate": null,
+      "pass_rate": 1.0,
       "type_score": 0.15,
       "decomp_loc": 6,
       "ref_loc": 4,
@@ -261,6 +261,28 @@
       "decomp_loc": 7,
       "ref_loc": 5,
       "loc_delta": 2,
+      "tier_confirmed": true
+    },
+    {
+      "symbol": "FUN_1000_f1bc",
+      "probable_name": "flag_byte_check",
+      "tier": 3,
+      "pass_rate": 1.0,
+      "type_score": 0.45,
+      "decomp_loc": 4,
+      "ref_loc": 2,
+      "loc_delta": 2,
+      "tier_confirmed": true
+    },
+    {
+      "symbol": "FUN_1000_fce8",
+      "probable_name": "compute_row_bitmasks",
+      "tier": 3,
+      "pass_rate": 1.0,
+      "type_score": 0.25,
+      "decomp_loc": 12,
+      "ref_loc": 8,
+      "loc_delta": 4,
       "tier_confirmed": true
     }
   ]

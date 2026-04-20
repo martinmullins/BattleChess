@@ -156,6 +156,18 @@ TIER3_REFS = {
             cb[6] = {0x2bca, 0x5cc2}; cb[7] = {0x2bfe, 0x5cc2};
         }"""),
         9),
+    "FUN_1000_f1bc": ("flag_byte_check",
+        "int flag_byte_check(int i) { return (flag_table[i] & 1) ? i + 0x20 : i; }",
+        2),
+    "FUN_1000_fce8": ("compute_row_bitmasks",
+        textwrap.dedent("""\
+        void compute_row_bitmasks(int player) {
+            for r in 0..7: mask[r] = 0
+            for r in 0..7: for c in 0..7:
+                if board[r*8+c] has piece and matches player:
+                    mask[r] |= (1 << c)
+        }"""),
+        8),
 }
 
 ALL_REFS = {**TIER1_REFS, **TIER2_REFS, **TIER3_REFS}
@@ -248,7 +260,9 @@ def state_pass_rate(oracle_records: list, symbol: str) -> float:
 
 
 def tier_ok_check(body: str, tier: int) -> bool:
-    has_global = bool(re.search(r'\*\s*\([^)]+\)\s*0x[0-9a-fA-F]+', body))
+    # Match both *(type *)0xHEX (fixed address) and *(type *)(expr + 0xHEX) (computed)
+    has_global = bool(re.search(
+        r'\*\s*\([^)]+\*\s*\)\s*(?:0x[0-9a-fA-F]+|\([^)]*0x[0-9a-fA-F][^)]*\))', body))
     has_call   = bool(re.search(r'\bFUN_[0-9a-fA-F_]+\s*\(', body[body.find('{'):] if body else ''))
     has_deref  = bool(re.search(r'(?<!=)\*(?!\s*/)(?!\s*\*)\s*[a-z_]\w*\b', body))
     if tier == 1:

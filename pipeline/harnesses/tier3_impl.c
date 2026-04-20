@@ -111,3 +111,51 @@ void FUN_1000_29b9(void)
     GSEG(SEG_CB6_OFF, uint16_t) = 0x2bca;  GSEG(SEG_CB6_SEG, uint16_t) = 0x5cc2;
     GSEG(SEG_CB7_OFF, uint16_t) = 0x2bfe;  GSEG(SEG_CB7_SEG, uint16_t) = 0x5cc2;
 }
+
+/* ---- FUN_1000_f1bc @ 1000:f1bc  flag_byte_check  (src line ~14807) ---- */
+/*
+ * Reads one byte from a flag table at base 0x4a1f + param_1.
+ * If bit 0 is set, returns param_1 + 0x20; otherwise returns param_1.
+ * DOS int is 16-bit; address arithmetic is done via uint16_t cast.
+ */
+int FUN_1000_f1bc(int param_1)
+{
+    if ((GSEG((uint16_t)(param_1 + 0x4a1f), uint8_t) & 1) != 0) {
+        return param_1 + 0x20;
+    }
+    return param_1;
+}
+
+/* ---- FUN_1000_fce8 @ 1000:fce8  compute_row_bitmasks  (src line ~8090) ---- */
+/*
+ * For each of 8 board rows, scans 8 columns and sets a bit in the row's
+ * output byte for every cell that belongs to the selected player.
+ *
+ * Board layout: byte[row*8 + col] at 0x1166.
+ *   bits[2:0] = piece type (0 = empty)
+ *   bit  6    = player flag (0 = player A, 1 = player B)
+ *
+ * param_1 == 0 → output bitmasks for player B (bit6 set)
+ * param_1 != 0 → output bitmasks for player A (bit6 clear)
+ *
+ * Output: byte[row] at (uint16_t)(row - 0x6dd0) = 0x9230 + row
+ */
+void FUN_1000_fce8(int param_1)
+{
+    for (int iVar2 = 0; iVar2 < 8; iVar2++) {
+        uint16_t row_addr = (uint16_t)(iVar2 - 0x6dd0);
+        GSEG(row_addr, uint8_t) = 0;
+        for (int iVar3 = 0; iVar3 < 8; iVar3++) {
+            uint16_t cell_addr = (uint16_t)(iVar2 * 8 + iVar3 + 0x1166);
+            uint8_t bVar1 = GSEG(cell_addr, uint8_t);
+            if ((bVar1 & 7) != 0) {
+                if ((bVar1 & 0x40) == 0) {
+                    if (param_1 != 0)
+                        GSEG(row_addr, uint8_t) |= (uint8_t)('\x01' << ((uint8_t)iVar3 & 0x1f));
+                } else if (param_1 == 0) {
+                    GSEG(row_addr, uint8_t) |= (uint8_t)('\x01' << ((uint8_t)iVar3 & 0x1f));
+                }
+            }
+        }
+    }
+}

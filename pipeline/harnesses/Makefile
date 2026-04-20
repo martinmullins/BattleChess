@@ -47,7 +47,9 @@ TIER3_TARGETS := \
     fuzz_clamp_text_size \
     fuzz_save_game_regs_b \
     fuzz_restore_game_regs_b \
-    fuzz_init_callback_table
+    fuzz_init_callback_table \
+    fuzz_flag_byte_check \
+    fuzz_compute_row_bitmasks
 
 TARGETS := $(TIER1_TARGETS) $(TIER2_TARGETS) $(TIER3_TARGETS)
 
