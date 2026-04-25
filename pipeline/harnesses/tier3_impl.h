@@ -82,6 +82,12 @@ static const uint16_t CB_SEG_ADDRS[8] = {
 #define SEG_BOARD_STATE  0x1166  /* byte[64] — 8×8 board (row-major)        */
 #define SEG_ROW_BMASK_0  0x9230  /* byte[8]  — row bitmasks (= -0x6dd0+0)   */
 
+/* write_tile_entry (FUN_1000_7dbf) — stride-4 table at 0xa8ba */
+#define SEG_TILE_TABLE   0xa8ba  /* byte[0] of entry at index i: 0xa8ba + i*4 */
+
+/* next_slot_fwd / next_slot_bwd (FUN_1000_db3d / FUN_1000_db65)
+ * 8-element circular slot table; each entry is 0x10 bytes; occupancy byte at +0x0f */
+
 void FUN_1000_2c46(void);
 void FUN_1000_2c79(void);
 void FUN_1000_8a64(void);
@@ -90,5 +96,8 @@ void FUN_1000_2ce0(void);
 void FUN_1000_29b9(void);
 int  FUN_1000_f1bc(int param_1);
 void FUN_1000_fce8(int param_1);
+void FUN_1000_7dbf(uint8_t param_1, uint8_t param_2, int param_3);
+int  FUN_1000_db3d(int param_1, int param_2);
+int  FUN_1000_db65(int param_1, int param_2);
 
 #endif /* TIER3_IMPL_H */

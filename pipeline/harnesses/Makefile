@@ -31,7 +31,8 @@ TIER1_TARGETS := \
     fuzz_is_printable \
     fuzz_coord_to_zone \
     fuzz_offset_sentinel \
-    fuzz_div32
+    fuzz_div32 \
+    fuzz_mul32
 
 TIER2_TARGETS := \
     fuzz_clear_anim_flag \
@@ -49,7 +50,10 @@ TIER3_TARGETS := \
     fuzz_restore_game_regs_b \
     fuzz_init_callback_table \
     fuzz_flag_byte_check \
-    fuzz_compute_row_bitmasks
+    fuzz_compute_row_bitmasks \
+    fuzz_write_tile_entry \
+    fuzz_next_slot_fwd \
+    fuzz_next_slot_bwd
 
 TARGETS := $(TIER1_TARGETS) $(TIER2_TARGETS) $(TIER3_TARGETS)
 
@@ -68,7 +72,7 @@ IMPL3   := tier3_impl.c
 SEG     := seg_storage.c
 
 fuzz_min_int fuzz_max_int fuzz_abs_int fuzz_is_odd fuzz_is_printable \
-fuzz_coord_to_zone fuzz_offset_sentinel fuzz_div32: %: %.c $(IMPL) tier1_impl.h ghidra_compat.h
+fuzz_coord_to_zone fuzz_offset_sentinel fuzz_div32 fuzz_mul32: %: %.c $(IMPL) tier1_impl.h ghidra_compat.h
 	$(CC) $(CFLAGS_FUZZ) -o $@ $< $(IMPL)
 
 fuzz_clear_anim_flag fuzz_set_text_cursor fuzz_handle_nav_key \
@@ -77,7 +81,9 @@ fuzz_pack_char_cell fuzz_snapshot_viewport fuzz_push_viewport: %: %.c $(IMPL2) t
 
 # Tier 3 harnesses link seg_storage.c (provides g_chess_seg) + tier3_impl.c
 fuzz_save_game_regs fuzz_restore_game_regs fuzz_clamp_text_size \
-fuzz_save_game_regs_b fuzz_restore_game_regs_b fuzz_init_callback_table: \
+fuzz_save_game_regs_b fuzz_restore_game_regs_b fuzz_init_callback_table \
+fuzz_flag_byte_check fuzz_compute_row_bitmasks \
+fuzz_write_tile_entry fuzz_next_slot_fwd fuzz_next_slot_bwd: \
     %: %.c $(IMPL3) $(SEG) tier3_impl.h tier2_seg.h ghidra_compat.h
 	$(CC) $(CFLAGS_FUZZ) -o $@ $< $(IMPL3) $(SEG)
 

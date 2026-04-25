@@ -159,3 +159,48 @@ void FUN_1000_fce8(int param_1)
         }
     }
 }
+
+/* ---- FUN_1000_7dbf @ 1000:7dbf  write_tile_entry ----
+ *
+ * Writes a byte pair at stride-4 offset into the tile table at 0xa8ba.
+ *   tile_table[param_3 * 4 + 0] = param_1   (value byte)
+ *   tile_table[param_3 * 4 + 1] = param_2   (flag byte)
+ *
+ * Address: (uint16_t)(param_3 * 4 + -0x5746) = 0xa8ba + param_3 * 4
+ */
+void FUN_1000_7dbf(uint8_t param_1, uint8_t param_2, int param_3)
+{
+    GSEG((uint16_t)(param_3 * 4 - 0x5746), uint8_t) = param_1;
+    GSEG((uint16_t)(param_3 * 4 - 0x5745), uint8_t) = param_2;
+}
+
+/* ---- FUN_1000_db3d @ 1000:db3d  next_slot_fwd ----
+ *
+ * Advances slot index forward (mod 8) until a non-empty slot is found.
+ * Each slot is 0x10 bytes; occupancy sentinel is at byte offset 0x0f.
+ * Occupied: sentinel != -1.  Empty: sentinel == -1 (0xff as int8_t).
+ *
+ * param_1 = base address of the 8-element slot table in g_chess_seg
+ * param_2 = starting slot index (0–7)
+ */
+int FUN_1000_db3d(int param_1, int param_2)
+{
+    do {
+        param_2 = param_2 + 1;
+        if (7 < param_2) param_2 = 0;
+    } while (GSEG((uint16_t)(param_1 + param_2 * 0x10 + 0xf), int8_t) == -1);
+    return param_2;
+}
+
+/* ---- FUN_1000_db65 @ 1000:db65  next_slot_bwd ----
+ *
+ * Same as FUN_1000_db3d but scans backwards (mod 8).
+ */
+int FUN_1000_db65(int param_1, int param_2)
+{
+    do {
+        param_2 = param_2 - 1;
+        if (param_2 < 0) param_2 = 7;
+    } while (GSEG((uint16_t)(param_1 + param_2 * 0x10 + 0xf), int8_t) == -1);
+    return param_2;
+}

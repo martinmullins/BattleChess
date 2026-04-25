@@ -318,6 +318,35 @@ static void sweep_snapshot_viewport(void)
 }
 
 /* =========================================================================
+ * Tier 1 extra sweep — mul32
+ * ========================================================================= */
+
+static void sweep_mul32(void)
+{
+    static const uint16_t LO[] = {
+        0, 1, 2, 0xFF, 0x100, 0x7FFF, 0x8000, 0xFFFF,
+        0x1234, 0x5678, 0xABCD,
+    };
+    static const int16_t HI[] = {
+        0, 1, -1, 0x7FFF, (int16_t)0x8000,
+    };
+    int nlo = (int)(sizeof(LO)/sizeof(LO[0]));
+    int nhi = (int)(sizeof(HI)/sizeof(HI[0]));
+
+    for (int i = 0; i < nlo; i++)
+      for (int j = 0; j < nhi; j++)
+        for (int k = 0; k < nlo; k++)
+          for (int l = 0; l < nhi; l++) {
+              uint16_t p1 = LO[i]; int16_t p2 = HI[j];
+              uint16_t p3 = LO[k]; int16_t p4 = HI[l];
+              uint32_t out = FUN_1000_f32e(p1, p2, p3, p4);
+              printf("{\"fn\":\"FUN_1000_f32e\",\"tier\":1,"
+                     "\"in\":[%u,%d,%u,%d],\"out\":%u}\n",
+                     p1, p2, p3, p4, out);
+          }
+}
+
+/* =========================================================================
  * Tier 3 sweeps
  * ========================================================================= */
 
@@ -565,6 +594,81 @@ static void sweep_flag_byte_check(void)
     }
 }
 
+static void sweep_write_tile_entry(void)
+{
+    /* Sweep param_3 over [0, 127] with a few (param_1, param_2) pairs. */
+    static const uint8_t VALS[][2] = {
+        {0x00, 0x00}, {0x06, 0x00}, {0x06, 0x01}, {0x01, 0x01},
+        {0xFF, 0x00}, {0xFF, 0x01}, {0x03, 0x01},
+    };
+    int nv = (int)(sizeof(VALS)/sizeof(VALS[0]));
+
+    for (int v = 0; v < nv; v++) {
+        for (int idx = 0; idx <= 127; idx++) {
+            memset(g_chess_seg, 0, sizeof(g_chess_seg));
+            FUN_1000_7dbf(VALS[v][0], VALS[v][1], idx);
+            uint16_t a0 = (uint16_t)(SEG_TILE_TABLE + (unsigned)idx * 4);
+            uint16_t a1 = (uint16_t)(SEG_TILE_TABLE + (unsigned)idx * 4 + 1);
+            printf("{\"fn\":\"FUN_1000_7dbf\",\"tier\":3,"
+                   "\"args\":[%u,%u,%d],"
+                   "\"seg_in\":{},"
+                   "\"seg_out\":{\"%x\":%u,\"%x\":%u}}\n",
+                   VALS[v][0], VALS[v][1], idx,
+                   a0, (unsigned)GSEG(a0, uint8_t),
+                   a1, (unsigned)GSEG(a1, uint8_t));
+        }
+    }
+}
+
+static void sweep_next_slot(void)
+{
+    /* Sweep all 256 occupancy patterns × 8 start slots × fwd/bwd. */
+    static const uint16_t BASE = 0x2000;
+
+    for (int pat = 0; pat < 256; pat++) {
+        int any_occ = 0;
+        for (int i = 0; i < 8; i++)
+            if (!((pat >> i) & 1)) { any_occ = 1; break; }
+        if (!any_occ) continue;  /* all-empty: would loop forever */
+
+        /* Set occupancy: bit i=0 → occupied (0x00), bit i=1 → empty (0xff) */
+        for (int start = 0; start < 8; start++) {
+            memset(g_chess_seg, 0, sizeof(g_chess_seg));
+            for (int i = 0; i < 8; i++) {
+                uint8_t v = ((pat >> i) & 1) ? 0xff : 0x00;
+                GSEG((uint16_t)(BASE + i * 0x10 + 0x0f), uint8_t) = v;
+            }
+
+            /* Snapshot the 8 occupancy bytes. */
+            AddrSpec specs[8];
+            for (int i = 0; i < 8; i++)
+                specs[i] = (AddrSpec){(uint16_t)(BASE + i * 0x10 + 0x0f), 0};
+            uint16_t before[8], after_f[8], after_b[8];
+            snap(specs, 8, before);
+
+            int ret_f = FUN_1000_db3d(BASE, start);
+            snap(specs, 8, after_f);
+
+            /* Restore and run backward. */
+            for (int i = 0; i < 8; i++) {
+                uint8_t v = ((pat >> i) & 1) ? 0xff : 0x00;
+                GSEG((uint16_t)(BASE + i * 0x10 + 0x0f), uint8_t) = v;
+            }
+            int ret_b = FUN_1000_db65(BASE, start);
+            snap(specs, 8, after_b);
+
+            char args[32];
+            snprintf(args, sizeof(args), "[%d,%d]", (int)BASE, start);
+            emit_seg_delta("FUN_1000_db3d", 3, args, (long long)ret_f,
+                           specs, 8, before, after_f);
+            /* Restore before[] for backward emit. */
+            snap(specs, 8, before);  /* after backward run: no seg change */
+            emit_seg_delta("FUN_1000_db65", 3, args, (long long)ret_b,
+                           specs, 8, before, after_b);
+        }
+    }
+}
+
 static void sweep_compute_row_bitmasks(void)
 {
     /* A few representative board configurations. */
@@ -625,6 +729,7 @@ int main(void)
     sweep_coord_to_zone();
     sweep_offset_sentinel();
     sweep_div32();
+    sweep_mul32();
     /* Tier 2 */
     sweep_clear_anim_flag();
     sweep_set_text_cursor();
@@ -642,5 +747,8 @@ int main(void)
     /* Tier 3 — flag_byte_check + compute_row_bitmasks */
     sweep_flag_byte_check();
     sweep_compute_row_bitmasks();
+    /* Tier 3 — write_tile_entry + next_slot_fwd/bwd */
+    sweep_write_tile_entry();
+    sweep_next_slot();
     return 0;
 }

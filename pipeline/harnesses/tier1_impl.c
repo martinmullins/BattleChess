@@ -123,3 +123,22 @@ uint FUN_1000_fe4a(uint param_1)
 {
     return param_1 & 1;
 }
+
+/*
+ * ---- FUN_1000_f32e @ 1000:f32e  mul32 ----
+ *
+ * Lower 32 bits of the product of two signed 32-bit integers, each supplied as
+ * a (hi, lo) uint16/int16 pair: A = param_2:param_1, B = param_4:param_3.
+ * When both high halves are zero it reduces to a plain 16×16→32 unsigned multiply.
+ * Signature derived by promoting Ghidra's register-implicit params to explicit args.
+ */
+uint32_t FUN_1000_f32e(uint16_t param_1, int16_t param_2, uint16_t param_3, int16_t param_4)
+{
+    if (param_4 == 0 && param_2 == 0)
+        return (uint32_t)param_1 * (uint32_t)param_3;
+    uint32_t prod = (uint32_t)param_1 * (uint32_t)param_3;
+    uint16_t hi   = (uint16_t)((uint16_t)(prod >> 16)
+                              + (uint16_t)((int)param_2 * (int)param_3)
+                              + (uint16_t)((int)param_1 * (int)param_4));
+    return ((uint32_t)hi << 16) | (uint16_t)prod;
+}
