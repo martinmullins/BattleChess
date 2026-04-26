@@ -669,6 +669,75 @@ static void sweep_next_slot(void)
     }
 }
 
+static void sweep_rand_step(void)
+{
+    /* Sweep representative RNG states to capture the LCG transition. */
+    static const uint16_t LO_VALS[] = {
+        0, 1, 0x1234, 0x8000, 0xFFFF, 0xABCD, 0x5A5A, 0x0001
+    };
+    static const uint16_t HI_VALS[] = {
+        0, 1, 0x5678, 0x7FFF, 0xFFFF, 0x1000
+    };
+    int nlo = (int)(sizeof(LO_VALS)/sizeof(LO_VALS[0]));
+    int nhi = (int)(sizeof(HI_VALS)/sizeof(HI_VALS[0]));
+
+    static const AddrSpec specs[] = {
+        {SEG_RNG_LO, 1}, {SEG_RNG_HI, 1}
+    };
+    int n = 2;
+    uint16_t before[2], after[2];
+
+    for (int i = 0; i < nlo; i++) {
+        for (int j = 0; j < nhi; j++) {
+            memset(g_chess_seg, 0, sizeof(g_chess_seg));
+            GSEG(SEG_RNG_LO, uint16_t) = LO_VALS[i];
+            GSEG(SEG_RNG_HI, uint16_t) = HI_VALS[j];
+            snap(specs, n, before);
+            uint ret = FUN_1000_f2f0();
+            snap(specs, n, after);
+            emit_seg_delta("FUN_1000_f2f0", 3, "[]", (long long)ret,
+                           specs, n, before, after);
+        }
+    }
+}
+
+static void sweep_notation_to_coord(void)
+{
+    /* Sweep valid and boundary column/row chars, with and without case-fold flag. */
+    static const char COL_CHARS[] = {
+        'a','b','c','d','e','f','g','h',   /* valid lowercase */
+        'A','B','C','D','E','F','G','H',   /* uppercase — foldable */
+        '`','i','@','I','0','z'            /* just outside valid range */
+    };
+    static const char ROW_CHARS[] = {
+        '1','2','3','4','5','6','7','8',   /* valid rows */
+        '0','9','/',':', 'a'               /* just outside valid range */
+    };
+    int nc = (int)(sizeof(COL_CHARS)/sizeof(COL_CHARS[0]));
+    int nr = (int)(sizeof(ROW_CHARS)/sizeof(ROW_CHARS[0]));
+
+    for (int ci = 0; ci < nc; ci++) {
+        for (int ri = 0; ri < nr; ri++) {
+            for (int flag = 0; flag <= 1; flag++) {
+                memset(g_chess_seg, 0, sizeof(g_chess_seg));
+                char p1 = COL_CHARS[ci], p2 = ROW_CHARS[ri];
+                uint16_t flag_addr = (uint16_t)(SEG_FLAG_TABLE + (int)p1);
+                GSEG(flag_addr, uint8_t) = (uint8_t)flag;
+                int result = FUN_1000_8856(p1, p2);
+                printf("{\"fn\":\"FUN_1000_8856\",\"tier\":3,"
+                       "\"args\":[%d,%d],"
+                       "\"seg_in\":{\"%x\":%d},"
+                       "\"seg_out\":{\"%x\":%d},"
+                       "\"ret\":%d}\n",
+                       (int)(unsigned char)p1, (int)(unsigned char)p2,
+                       (unsigned)flag_addr, flag,
+                       (unsigned)flag_addr, flag,
+                       result);
+            }
+        }
+    }
+}
+
 static void sweep_compute_row_bitmasks(void)
 {
     /* A few representative board configurations. */
@@ -750,5 +819,8 @@ int main(void)
     /* Tier 3 — write_tile_entry + next_slot_fwd/bwd */
     sweep_write_tile_entry();
     sweep_next_slot();
+    /* Tier 3 — rand_step + notation_to_coord */
+    sweep_rand_step();
+    sweep_notation_to_coord();
     return 0;
 }

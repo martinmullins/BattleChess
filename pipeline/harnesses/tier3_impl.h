@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "ghidra_compat.h"
+#include "tier1_impl.h"    /* for FUN_1000_f32e used by FUN_1000_f2f0 */
 #include "tier2_seg.h"
 
 /* save_game_regs / restore_game_regs — slot A (FUN_1000_2c46 / FUN_1000_2c79) */
@@ -88,6 +89,10 @@ static const uint16_t CB_SEG_ADDRS[8] = {
 /* next_slot_fwd / next_slot_bwd (FUN_1000_db3d / FUN_1000_db65)
  * 8-element circular slot table; each entry is 0x10 bytes; occupancy byte at +0x0f */
 
+/* rand_step (FUN_1000_f2f0) — LCG: state = state * 0x343fd + 0x269ec3 */
+#define SEG_RNG_LO  0x4a02   /* uint16 — RNG state low word  */
+#define SEG_RNG_HI  0x4a04   /* uint16 — RNG state high word */
+
 void FUN_1000_2c46(void);
 void FUN_1000_2c79(void);
 void FUN_1000_8a64(void);
@@ -99,5 +104,7 @@ void FUN_1000_fce8(int param_1);
 void FUN_1000_7dbf(uint8_t param_1, uint8_t param_2, int param_3);
 int  FUN_1000_db3d(int param_1, int param_2);
 int  FUN_1000_db65(int param_1, int param_2);
+uint FUN_1000_f2f0(void);
+int  FUN_1000_8856(char param_1, char param_2);
 
 #endif /* TIER3_IMPL_H */

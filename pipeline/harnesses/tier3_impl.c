@@ -204,3 +204,41 @@ int FUN_1000_db65(int param_1, int param_2)
     } while (GSEG((uint16_t)(param_1 + param_2 * 0x10 + 0xf), int8_t) == -1);
     return param_2;
 }
+
+/* ---- FUN_1000_f2f0 @ 1000:f2f0  rand_step  (src line ~14993) ----
+ *
+ * One step of a 32-bit LCG: state = state * 0x343fd + 0x269ec3
+ * State is stored split across two 16-bit words in the segment:
+ *   low  word at SEG_RNG_LO (0x4a02)
+ *   high word at SEG_RNG_HI (0x4a04)
+ * Returns the upper 15 bits of the new state (bits [30:16]).
+ */
+uint FUN_1000_f2f0(void)
+{
+    uint16_t state_lo = GSEG(SEG_RNG_LO, uint16_t);
+    int16_t  state_hi = GSEG(SEG_RNG_HI, int16_t);
+    uint32_t lVar2    = FUN_1000_f32e(state_lo, state_hi, 0x43fd, 3);
+    uint32_t new_s    = lVar2 + 0x269ec3U;
+    GSEG(SEG_RNG_LO, uint16_t) = (uint16_t)new_s;
+    GSEG(SEG_RNG_HI, uint16_t) = (uint16_t)(new_s >> 16);
+    return (uint)((new_s >> 16) & 0x7fff);
+}
+
+/* ---- FUN_1000_8856 @ 1000:8856  notation_to_coord  (src line ~8100) ----
+ *
+ * Converts chess notation (column char, row char) to a 0x88 board index.
+ * Column is first run through FUN_1000_f1bc (case-fold via flag table).
+ * Valid column range after fold: 'a'..'h' (0x61..0x68).
+ * Valid row range: '1'..'8' (0x31..0x38).
+ * Returns: row_digit * 0x10 + col_letter - 0x371
+ * Returns 0 for invalid inputs (local_4 left at zero).
+ */
+int FUN_1000_8856(char param_1, char param_2)
+{
+    char cVar1 = (char)FUN_1000_f1bc((int)param_1);
+    int16_t local_4 = 0;
+    if ((('`' < cVar1) && (cVar1 < 'i')) && (('0' < param_2) && (param_2 < '9'))) {
+        local_4 = (int16_t)((int)param_2 * 0x10 + (int)cVar1 + -0x371);
+    }
+    return (int)local_4;
+}

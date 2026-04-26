@@ -196,6 +196,24 @@ TIER3_REFS = {
             return slot;
         }"""),
         4),
+    "FUN_1000_f2f0": ("rand_step",
+        textwrap.dedent("""\
+        uint rand_step(void) {
+            state = state * 0x343fd + 0x269ec3;
+            rng_lo = state & 0xffff;
+            rng_hi = state >> 16;
+            return rng_hi & 0x7fff;
+        }"""),
+        5),
+    "FUN_1000_8856": ("notation_to_coord",
+        textwrap.dedent("""\
+        int notation_to_coord(char col, char row) {
+            char c = flag_byte_check(col);
+            if ('`' < c && c < 'i' && '0' < row && row < '9')
+                return row * 0x10 + c - 0x371;
+            return 0;
+        }"""),
+        5),
 }
 
 ALL_REFS = {**TIER1_REFS, **TIER2_REFS, **TIER3_REFS}

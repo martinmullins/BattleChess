@@ -1,13 +1,13 @@
 {
   "summary": {
-    "total": 29,
+    "total": 31,
     "tier1": 12,
     "tier2": 6,
-    "tier3": 11,
-    "tier_confirmed": 29,
+    "tier3": 13,
+    "tier_confirmed": 30,
     "avg_pass_rate": 1.0,
     "avg_type_score": 0.46,
-    "avg_loc_delta": 3.1
+    "avg_loc_delta": 3.0
   },
   "functions": [
     {
@@ -275,6 +275,17 @@
       "tier_confirmed": true
     },
     {
+      "symbol": "FUN_1000_8856",
+      "probable_name": "notation_to_coord",
+      "tier": 3,
+      "pass_rate": 1.0,
+      "type_score": 0.55,
+      "decomp_loc": 7,
+      "ref_loc": 5,
+      "loc_delta": 2,
+      "tier_confirmed": false
+    },
+    {
       "symbol": "FUN_1000_8a64",
       "probable_name": "clamp_text_size",
       "tier": 3,
@@ -316,6 +327,17 @@
       "decomp_loc": 5,
       "ref_loc": 2,
       "loc_delta": 3,
+      "tier_confirmed": true
+    },
+    {
+      "symbol": "FUN_1000_f2f0",
+      "probable_name": "rand_step",
+      "tier": 3,
+      "pass_rate": 1.0,
+      "type_score": 0.3,
+      "decomp_loc": 7,
+      "ref_loc": 5,
+      "loc_delta": 2,
       "tier_confirmed": true
     },
     {
