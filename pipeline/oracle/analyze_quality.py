@@ -71,6 +71,15 @@ TIER1_REFS = {
     "FUN_1000_fe4a": ("is_odd",
         "uint is_odd(uint a) { return a & 1; }",
         1),
+    "FUN_1000_f32e": ("mul32",
+        textwrap.dedent("""\
+        uint32_t mul32(uint16_t p1, int16_t p2, uint16_t p3, int16_t p4) {
+            if (!p2 && !p4) return (uint32_t)p1 * p3;
+            uint32_t prod = (uint32_t)p1 * p3;
+            uint16_t hi = (prod>>16) + p2*p3 + p1*p4;
+            return ((uint32_t)hi << 16) | (uint16_t)prod;
+        }"""),
+        5),
 }
 
 TIER2_REFS = {
@@ -156,6 +165,55 @@ TIER3_REFS = {
             cb[6] = {0x2bca, 0x5cc2}; cb[7] = {0x2bfe, 0x5cc2};
         }"""),
         9),
+    "FUN_1000_f1bc": ("flag_byte_check",
+        "int flag_byte_check(int i) { return (flag_table[i] & 1) ? i + 0x20 : i; }",
+        2),
+    "FUN_1000_fce8": ("compute_row_bitmasks",
+        textwrap.dedent("""\
+        void compute_row_bitmasks(int player) {
+            for r in 0..7: mask[r] = 0
+            for r in 0..7: for c in 0..7:
+                if board[r*8+c] has piece and matches player:
+                    mask[r] |= (1 << c)
+        }"""),
+        8),
+    "FUN_1000_7dbf": ("write_tile_entry",
+        "void write_tile_entry(byte v, byte f, int i) { tile_table[i*4]=v; tile_table[i*4+1]=f; }",
+        2),
+    "FUN_1000_db3d": ("next_slot_fwd",
+        textwrap.dedent("""\
+        int next_slot_fwd(int base, int slot) {
+            do { slot = (slot + 1) % 8; }
+            while (table[slot].sentinel == -1);
+            return slot;
+        }"""),
+        4),
+    "FUN_1000_db65": ("next_slot_bwd",
+        textwrap.dedent("""\
+        int next_slot_bwd(int base, int slot) {
+            do { slot = (slot - 1 + 8) % 8; }
+            while (table[slot].sentinel == -1);
+            return slot;
+        }"""),
+        4),
+    "FUN_1000_f2f0": ("rand_step",
+        textwrap.dedent("""\
+        uint rand_step(void) {
+            state = state * 0x343fd + 0x269ec3;
+            rng_lo = state & 0xffff;
+            rng_hi = state >> 16;
+            return rng_hi & 0x7fff;
+        }"""),
+        5),
+    "FUN_1000_8856": ("notation_to_coord",
+        textwrap.dedent("""\
+        int notation_to_coord(char col, char row) {
+            char c = flag_byte_check(col);
+            if ('`' < c && c < 'i' && '0' < row && row < '9')
+                return row * 0x10 + c - 0x371;
+            return 0;
+        }"""),
+        5),
 }
 
 ALL_REFS = {**TIER1_REFS, **TIER2_REFS, **TIER3_REFS}
@@ -165,15 +223,24 @@ ALL_REFS = {**TIER1_REFS, **TIER2_REFS, **TIER3_REFS}
 # ---------------------------------------------------------------------------
 
 def extract_function_body(source_text: str, symbol: str) -> str:
-    pattern = re.compile(
-        r'/\* ---- ' + re.escape(symbol) + r' @ [^\n]+ ---- \*/'
-        r'.*?'
-        r'\{(.*?)\}',
-        re.DOTALL)
-    m = pattern.search(source_text)
+    header_pat = re.compile(
+        r'/\* ---- ' + re.escape(symbol) + r' @ [^\n]+ ---- \*/')
+    m = header_pat.search(source_text)
     if not m:
         return ""
-    return m.group(0)
+    brace_start = source_text.find('{', m.end())
+    if brace_start == -1:
+        return ""
+    depth, pos = 0, brace_start
+    while pos < len(source_text):
+        if source_text[pos] == '{':
+            depth += 1
+        elif source_text[pos] == '}':
+            depth -= 1
+            if depth == 0:
+                return source_text[m.start():pos + 1]
+        pos += 1
+    return ""
 
 
 def count_body_lines(body: str) -> int:
@@ -248,9 +315,11 @@ def state_pass_rate(oracle_records: list, symbol: str) -> float:
 
 
 def tier_ok_check(body: str, tier: int) -> bool:
-    has_global = bool(re.search(r'\*\s*\([^)]+\)\s*0x[0-9a-fA-F]+', body))
+    # Match both *(type *)0xHEX (fixed address) and *(type *)(expr + 0xHEX) (computed)
+    has_global = bool(re.search(
+        r'\*\s*\([^)]+\*\s*\)\s*(?:0x[0-9a-fA-F]+|\([^)]*0x[0-9a-fA-F][^)]*\))', body))
     has_call   = bool(re.search(r'\bFUN_[0-9a-fA-F_]+\s*\(', body[body.find('{'):] if body else ''))
-    has_deref  = bool(re.search(r'(?<!=)\*(?!\s*/)(?!\s*\*)\s*[a-z_]\w*\b', body))
+    has_deref  = bool(re.search(r'(?<!=)\*(?!\s*/)(?!\s*\*)[a-z_]\w*\b', body))
     if tier == 1:
         return not has_global and not has_call and not has_deref
     else:  # tier 2/3: must have globals (that's what makes them stateful)

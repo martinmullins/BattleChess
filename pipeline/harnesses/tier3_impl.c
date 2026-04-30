@@ -111,3 +111,134 @@ void FUN_1000_29b9(void)
     GSEG(SEG_CB6_OFF, uint16_t) = 0x2bca;  GSEG(SEG_CB6_SEG, uint16_t) = 0x5cc2;
     GSEG(SEG_CB7_OFF, uint16_t) = 0x2bfe;  GSEG(SEG_CB7_SEG, uint16_t) = 0x5cc2;
 }
+
+/* ---- FUN_1000_f1bc @ 1000:f1bc  flag_byte_check  (src line ~14807) ---- */
+/*
+ * Reads one byte from a flag table at base 0x4a1f + param_1.
+ * If bit 0 is set, returns param_1 + 0x20; otherwise returns param_1.
+ * DOS int is 16-bit; address arithmetic is done via uint16_t cast.
+ */
+int FUN_1000_f1bc(int param_1)
+{
+    if ((GSEG((uint16_t)(param_1 + 0x4a1f), uint8_t) & 1) != 0) {
+        return param_1 + 0x20;
+    }
+    return param_1;
+}
+
+/* ---- FUN_1000_fce8 @ 1000:fce8  compute_row_bitmasks  (src line ~8090) ---- */
+/*
+ * For each of 8 board rows, scans 8 columns and sets a bit in the row's
+ * output byte for every cell that belongs to the selected player.
+ *
+ * Board layout: byte[row*8 + col] at 0x1166.
+ *   bits[2:0] = piece type (0 = empty)
+ *   bit  6    = player flag (0 = player A, 1 = player B)
+ *
+ * param_1 == 0 → output bitmasks for player B (bit6 set)
+ * param_1 != 0 → output bitmasks for player A (bit6 clear)
+ *
+ * Output: byte[row] at (uint16_t)(row - 0x6dd0) = 0x9230 + row
+ */
+void FUN_1000_fce8(int param_1)
+{
+    for (int iVar2 = 0; iVar2 < 8; iVar2++) {
+        uint16_t row_addr = (uint16_t)(iVar2 - 0x6dd0);
+        GSEG(row_addr, uint8_t) = 0;
+        for (int iVar3 = 0; iVar3 < 8; iVar3++) {
+            uint16_t cell_addr = (uint16_t)(iVar2 * 8 + iVar3 + 0x1166);
+            uint8_t bVar1 = GSEG(cell_addr, uint8_t);
+            if ((bVar1 & 7) != 0) {
+                if ((bVar1 & 0x40) == 0) {
+                    if (param_1 != 0)
+                        GSEG(row_addr, uint8_t) |= (uint8_t)('\x01' << ((uint8_t)iVar3 & 0x1f));
+                } else if (param_1 == 0) {
+                    GSEG(row_addr, uint8_t) |= (uint8_t)('\x01' << ((uint8_t)iVar3 & 0x1f));
+                }
+            }
+        }
+    }
+}
+
+/* ---- FUN_1000_7dbf @ 1000:7dbf  write_tile_entry ----
+ *
+ * Writes a byte pair at stride-4 offset into the tile table at 0xa8ba.
+ *   tile_table[param_3 * 4 + 0] = param_1   (value byte)
+ *   tile_table[param_3 * 4 + 1] = param_2   (flag byte)
+ *
+ * Address: (uint16_t)(param_3 * 4 + -0x5746) = 0xa8ba + param_3 * 4
+ */
+void FUN_1000_7dbf(uint8_t param_1, uint8_t param_2, int param_3)
+{
+    GSEG((uint16_t)(param_3 * 4 - 0x5746), uint8_t) = param_1;
+    GSEG((uint16_t)(param_3 * 4 - 0x5745), uint8_t) = param_2;
+}
+
+/* ---- FUN_1000_db3d @ 1000:db3d  next_slot_fwd ----
+ *
+ * Advances slot index forward (mod 8) until a non-empty slot is found.
+ * Each slot is 0x10 bytes; occupancy sentinel is at byte offset 0x0f.
+ * Occupied: sentinel != -1.  Empty: sentinel == -1 (0xff as int8_t).
+ *
+ * param_1 = base address of the 8-element slot table in g_chess_seg
+ * param_2 = starting slot index (0–7)
+ */
+int FUN_1000_db3d(int param_1, int param_2)
+{
+    do {
+        param_2 = param_2 + 1;
+        if (7 < param_2) param_2 = 0;
+    } while (GSEG((uint16_t)(param_1 + param_2 * 0x10 + 0xf), int8_t) == -1);
+    return param_2;
+}
+
+/* ---- FUN_1000_db65 @ 1000:db65  next_slot_bwd ----
+ *
+ * Same as FUN_1000_db3d but scans backwards (mod 8).
+ */
+int FUN_1000_db65(int param_1, int param_2)
+{
+    do {
+        param_2 = param_2 - 1;
+        if (param_2 < 0) param_2 = 7;
+    } while (GSEG((uint16_t)(param_1 + param_2 * 0x10 + 0xf), int8_t) == -1);
+    return param_2;
+}
+
+/* ---- FUN_1000_f2f0 @ 1000:f2f0  rand_step  (src line ~14993) ----
+ *
+ * One step of a 32-bit LCG: state = state * 0x343fd + 0x269ec3
+ * State is stored split across two 16-bit words in the segment:
+ *   low  word at SEG_RNG_LO (0x4a02)
+ *   high word at SEG_RNG_HI (0x4a04)
+ * Returns the upper 15 bits of the new state (bits [30:16]).
+ */
+uint FUN_1000_f2f0(void)
+{
+    uint16_t state_lo = GSEG(SEG_RNG_LO, uint16_t);
+    int16_t  state_hi = GSEG(SEG_RNG_HI, int16_t);
+    uint32_t lVar2    = FUN_1000_f32e(state_lo, state_hi, 0x43fd, 3);
+    uint32_t new_s    = lVar2 + 0x269ec3U;
+    GSEG(SEG_RNG_LO, uint16_t) = (uint16_t)new_s;
+    GSEG(SEG_RNG_HI, uint16_t) = (uint16_t)(new_s >> 16);
+    return (uint)((new_s >> 16) & 0x7fff);
+}
+
+/* ---- FUN_1000_8856 @ 1000:8856  notation_to_coord  (src line ~8100) ----
+ *
+ * Converts chess notation (column char, row char) to a 0x88 board index.
+ * Column is first run through FUN_1000_f1bc (case-fold via flag table).
+ * Valid column range after fold: 'a'..'h' (0x61..0x68).
+ * Valid row range: '1'..'8' (0x31..0x38).
+ * Returns: row_digit * 0x10 + col_letter - 0x371
+ * Returns 0 for invalid inputs (local_4 left at zero).
+ */
+int FUN_1000_8856(char param_1, char param_2)
+{
+    char cVar1 = (char)FUN_1000_f1bc((int)param_1);
+    int16_t local_4 = 0;
+    if ((('`' < cVar1) && (cVar1 < 'i')) && (('0' < param_2) && (param_2 < '9'))) {
+        local_4 = (int16_t)((int)param_2 * 0x10 + (int)cVar1 + -0x371);
+    }
+    return (int)local_4;
+}

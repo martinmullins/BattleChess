@@ -25,5 +25,7 @@ int  FUN_1000_fe0c(int param_1, int param_2);
 int  FUN_1000_fe2b(int param_1, int param_2);
 /* is_odd: param_1 & 1 */
 uint FUN_1000_fe4a(uint param_1);
+/* mul32: lower 32 bits of signed 32-bit × 32-bit, inputs as 16-bit halves */
+uint32_t FUN_1000_f32e(uint16_t param_1, int16_t param_2, uint16_t param_3, int16_t param_4);
 
 #endif /* TIER1_IMPL_H */
